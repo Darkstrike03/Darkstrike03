@@ -255,6 +255,62 @@ footer { padding:3.5rem 1.5rem; border-top:1px solid rgba(26,21,16,.1); display:
 .footer-link:hover { color:var(--vermillion); }
 .footer-copy { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:.8rem; color:var(--ink-4); opacity:.6; }
 
+/* ════ 1. SCROLL-MARGIN for nav offset ════ */
+#about, #skills, #projects, #tao-close {
+  scroll-margin-top: 80px;
+}
+
+/* ════ 2. BREATHING KANJI ════ */
+.hero-kanji {
+  filter: url(#inkBreath);
+}
+
+/* ════ 3. PROJECT INK STAIN ════ */
+.project-row {
+  position: relative;
+  overflow: hidden;
+}
+.project-row::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  /* radial ink bleed — origin set by JS on mouseenter */
+  background: radial-gradient(ellipse 80% 120% at var(--stain-x,50%) var(--stain-y,50%),
+    rgba(26,21,16,.055) 0%,
+    rgba(26,21,16,.022) 40%,
+    transparent 72%
+  );
+  opacity: 0;
+  transform: scale(.55);
+  transition: opacity .55s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.project-row:hover::before {
+  opacity: 1;
+  transform: scale(1);
+}
+/* Ink spread line at top */
+.project-row::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(26,21,16,.2) var(--stain-x,50%), transparent);
+  opacity: 0;
+  transition: opacity .4s .1s ease;
+}
+.project-row:hover::after { opacity: 1; }
+
+/* ════ 4. CURSOR HOVER STATE ════ */
+#cursorDot {
+  transition: width .18s ease, height .18s ease, background .18s ease, box-shadow .18s ease;
+}
+#cursorDot.on-link {
+  width: 14px; height: 14px;
+  background: var(--vermillion);
+  box-shadow: 0 0 14px rgba(192,57,43,.5);
+}
+
 /* ════ MOBILE ════ */
 @media (max-width:768px) {
   nav { padding:1rem 1.2rem; }
@@ -281,6 +337,29 @@ footer { padding:3.5rem 1.5rem; border-top:1px solid rgba(26,21,16,.1); display:
 </style>
 </head>
 <body>
+
+<!-- SVG filters -->
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+  <defs>
+    <filter id="inkBreath" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence
+        id="inkTurb"
+        type="fractalNoise"
+        baseFrequency="0.018 0.022"
+        numOctaves="3"
+        seed="2"
+        result="noise"/>
+      <feDisplacementMap
+        in="SourceGraphic"
+        in2="noise"
+        scale="4"
+        xChannelSelector="R"
+        yChannelSelector="G"
+        result="displaced"/>
+      <feComposite in="displaced" in2="SourceGraphic" operator="atop"/>
+    </filter>
+  </defs>
+</svg>
 
 <div id="cursorDot"></div>
 <canvas id="trailCanvas"></canvas>
@@ -427,6 +506,7 @@ const HIST = 42;
 // Chain of lagged positions
 const chain = Array.from({length:HIST}, ()=>({x:-300,y:-300}));
 let mx=-300, my=-300;
+let cursorOnLink = false; // set by hover intent below
 
 document.addEventListener('mousemove', e=>{
   mx=e.clientX; my=e.clientY;
@@ -477,9 +557,11 @@ document.addEventListener('click', e=>{
 
   // Stroke with gradient: thick+opaque at head, thin+transparent at tail
   const head = chain[0], tail = chain[HIST-1];
+  const headColor = cursorOnLink ? 'rgba(192,57,43,.65)' : 'rgba(26,21,16,.58)';
+  const midColor  = cursorOnLink ? 'rgba(160,40,25,.28)' : 'rgba(26,21,16,.32)';
   const grad = tctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
-  grad.addColorStop(0,   'rgba(26,21,16,.58)');
-  grad.addColorStop(.3,  'rgba(26,21,16,.32)');
+  grad.addColorStop(0,   headColor);
+  grad.addColorStop(.3,  midColor);
   grad.addColorStop(.65, 'rgba(26,21,16,.12)');
   grad.addColorStop(1,   'rgba(26,21,16,0)');
 
@@ -532,32 +614,53 @@ const m3=new THREE.ShaderMaterial({
       return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
     }
     float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*noise(p);p*=2.1;a*=.5;}return v;}
-    float mtn(vec2 uv,float off,float h,float r){return h+fbm(vec2(uv.x*r+off,uT*.018))*.22-uv.y;}
+
+    // Mountain with per-layer horizontal parallax + vertical parallax
+    float mtn(vec2 uv, float off, float h, float r, float vShift){
+      return h + fbm(vec2(uv.x*r + off, uT*.018))*.22 - (uv.y - vShift);
+    }
+
     void main(){
-      // uv in [0,1] with y=0 at top
       vec2 uv=gl_FragCoord.xy/uR; uv.y=1.-uv.y;
       float asp=uR.x/uR.y;
-      float s=uS*.00022;
+
+      // Scroll-based parallax amounts per layer
+      float sBase = uS * 0.00022;
+      float sFar  = uS * 0.00006;   // far mountains barely move
+      float sMid  = uS * 0.00014;   // mid mountains move moderately
+      float sNear = uS * 0.00026;   // near mountains move most
+      // Vertical shift — horizon slowly rises as you scroll
+      float vFar  = uS * 0.00004;
+      float vMid  = uS * 0.00010;
+      float vNear = uS * 0.00018;
+
       vec3 paper=vec3(.961,.945,.91);
       vec3 sky=mix(vec3(.93,.908,.878),paper,smoothstep(0.,.7,uv.y));
       // mist band
       float mY=.52+sin(uT*.07)*.015+fbm(vec2(uv.x*1.2,uT*.035))*.05;
       float mb=1.-smoothstep(0.,.28,abs(uv.y-mY));
-      // mountains
-      float f1=mtn(uv,3.6+s*.25,.56,2.0),f2=mtn(uv,1.1+s*.55,.44,3.0),f3=mtn(uv,0.+s,.30,4.2);
-      float fa=smoothstep(0.,.012,f1)*.1,ma=smoothstep(0.,.015,f2)*.2,na=smoothstep(0.,.018,f3)*.42;
+
+      // Mountains — each with independent parallax
+      float f1=mtn(uv, 3.6 + sFar,  .56, 2.0, -vFar);
+      float f2=mtn(uv, 1.1 + sMid,  .44, 3.0, -vMid);
+      float f3=mtn(uv, 0.0 + sNear, .30, 4.2, -vNear);
+      float fa=smoothstep(0.,.012,f1)*.1;
+      float ma=smoothstep(0.,.015,f2)*.2;
+      float na=smoothstep(0.,.018,f3)*.42;
+
       // water
       float wR=fbm(vec2(uv.x*9.,uT*.35))*.012;
       float wA=smoothstep(0.,.07,-(uv.y-.17+wR))*.05;
-      // RED SUN — aspect-corrected so it stays circular on any screen
+
+      // RED SUN — aspect-corrected
       vec2 sc=vec2(.5+uM.x*.012,.195-uM.y*.007);
-      // stretch uv.x by 1/asp to match physical pixels
       vec2 sd=(uv-sc)*vec2(asp,1.);
-      float sR=.044; // in aspect-corrected space → stays circular
+      float sR=.044;
       float sDist=length(sd);
       float sun=smoothstep(sR+.004,sR-.004,sDist);
       float glow=smoothstep(sR*3.5,sR,sDist)*.055;
       vec3 sunC=vec3(.76,.23,.14);
+
       // compose
       vec3 col=sky;
       col=mix(col,vec3(.94,.924,.9),mb*.55);
@@ -567,13 +670,10 @@ const m3=new THREE.ShaderMaterial({
       col=mix(col,mix(col,vec3(.78,.87,.92),1.),wA);
       col+=glow*sunC;
       col=mix(col,sunC,sun);
-      // vignette
       float vig=smoothstep(0.,1.3,length((uv-.5)*vec2(1.,1.3)));
       col=mix(col,paper*.91,vig*.28);
-      // edge bleed
       float eb=smoothstep(.95,1.,uv.x)+smoothstep(.05,0.,uv.x);
       col=mix(col,vec3(.18,.15,.12),eb*.055);
-      // grain
       col+=(hash(uv*uR*.5+uT*.1)-.5)*.01;
       gl_FragColor=vec4(clamp(col,0.,1.),.93);
     }
@@ -692,6 +792,44 @@ if(pc){
     pctx.restore();
   })();
 }
+
+// ══════════════════════════════════
+//  2. PROJECT INK STAIN
+// ══════════════════════════════════
+document.querySelectorAll('.project-row').forEach(row => {
+  row.addEventListener('mousemove', e => {
+    const rect = row.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
+    const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
+    row.style.setProperty('--stain-x', x);
+    row.style.setProperty('--stain-y', y);
+  });
+});
+
+// ══════════════════════════════════
+//  3. BREATHING KANJI
+// ══════════════════════════════════
+const inkTurb = document.getElementById('inkTurb');
+if (inkTurb) {
+  const dispMap = inkTurb.parentElement.querySelector('feDisplacementMap');
+  let bT = 0;
+  (function breathe() {
+    requestAnimationFrame(breathe);
+    bT += 0.008;
+    const bfX = (0.014 + Math.sin(bT * 0.7)  * 0.006).toFixed(4);
+    const bfY = (0.018 + Math.sin(bT * 0.5 + 1.2) * 0.005).toFixed(4);
+    inkTurb.setAttribute('baseFrequency', `${bfX} ${bfY}`);
+    dispMap.setAttribute('scale', (3.5 + Math.sin(bT * 0.9) * 1.8).toFixed(2));
+  })();
+}
+
+// ══════════════════════════════════
+//  4. CURSOR HOVER INTENT
+// ══════════════════════════════════
+document.querySelectorAll('a, button, .skill-pill, .project-row, .nav-hamburger').forEach(el => {
+  el.addEventListener('mouseenter', () => { cursorDot.classList.add('on-link');    cursorOnLink = true;  });
+  el.addEventListener('mouseleave', () => { cursorDot.classList.remove('on-link'); cursorOnLink = false; });
+});
 
 // ══════════════════════════════════
 //  INK DROP REVEAL
