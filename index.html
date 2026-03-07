@@ -8,9 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 :root {
-  --rice: #f5f0e8;
-  --aged: #ede5d5;
-  --fog: #ddd5c5;
+  --rice: #f4efe4;
   --ink-0: #1a1510;
   --ink-1: #2d2820;
   --ink-2: #4a4035;
@@ -19,12 +17,9 @@
   --vermillion: #c0392b;
   --vermillion-dim: #8b2020;
   --seal-red: #a01010;
-  --mist: rgba(245,240,232,0.0);
 }
-
 * { margin:0; padding:0; box-sizing:border-box; }
 html { scroll-behavior: smooth; }
-
 body {
   background: var(--rice);
   color: var(--ink-1);
@@ -33,788 +28,263 @@ body {
   cursor: none;
 }
 
-/* ── CURSOR ── */
-.cursor-dot {
+/* ════ CURSOR ════ */
+#cursorDot {
   position: fixed;
-  width: 7px; height: 7px;
+  width: 8px; height: 8px;
   background: var(--ink-0);
   border-radius: 50%;
   pointer-events: none;
   z-index: 10000;
-  transform: translate(-50%, -50%);
-  transition: transform 0.08s;
-  box-shadow: 0 0 4px rgba(26,21,16,0.35);
-}
-.cursor-trail-dot {
-  position: fixed;
-  border-radius: 50%;
-  pointer-events: none;
-  z-index: 9998;
-  transform: translate(-50%, -50%);
-  background: var(--ink-0);
-  will-change: transform, opacity;
-}
-.ink-splat {
-  position: fixed;
-  pointer-events: none;
-  z-index: 9990;
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(26,21,16,0.18) 0%, transparent 70%);
   transform: translate(-50%,-50%);
-  animation: splatFade 1.2s forwards;
+  box-shadow: 0 0 6px rgba(26,21,16,.4);
+}
+#trailCanvas {
+  position: fixed; inset: 0;
+  pointer-events: none; z-index: 9999;
+}
+
+/* ════ INK SPLAT ════ */
+.ink-splat-el {
+  position: fixed; pointer-events: none; z-index: 9990;
+  transform: translate(-50%,-50%);
+  animation: splatFade 1.4s cubic-bezier(.2,.8,.3,1) forwards;
 }
 @keyframes splatFade {
-  0%   { opacity:1; transform: translate(-50%,-50%) scale(0); }
-  30%  { opacity:0.7; transform: translate(-50%,-50%) scale(1); }
-  100% { opacity:0; transform: translate(-50%,-50%) scale(1.5); }
+  0%   { opacity:.9;  transform:translate(-50%,-50%) scale(0)   rotate(0deg); }
+  35%  { opacity:.6;  transform:translate(-50%,-50%) scale(1)   rotate(8deg); }
+  100% { opacity:0;   transform:translate(-50%,-50%) scale(1.7) rotate(14deg); }
 }
 
-/* ── CANVAS ── */
-#bg-canvas {
-  position: fixed;
-  top:0; left:0; width:100%; height:100%;
-  z-index: 0;
+/* ════ BG CANVASES ════ */
+#bg-canvas, #bird-canvas {
+  position: fixed; inset:0; width:100%; height:100%;
   pointer-events: none;
-  opacity: 0.85;
 }
+#bg-canvas   { z-index: 0; }
+#bird-canvas { z-index: 1; }
 
-/* ── INK WASH OVERLAY (SVG filter) ── */
-.ink-filter { display:none; }
-
-/* ── PAPER TEXTURE ── */
+/* ════ PAPER TEXTURE ════ */
 body::before {
-  content:'';
-  position: fixed;
-  inset:0;
-  background-image:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23p)' opacity='0.04'/%3E%3C/svg%3E");
-  pointer-events: none;
-  z-index: 1;
-  mix-blend-mode: multiply;
+  content:''; position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23p)' opacity='.035'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:1; mix-blend-mode:multiply;
 }
-
-/* ── PAPER VIGNETTE ── */
 body::after {
-  content:'';
-  position:fixed;
-  inset:0;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(180,165,140,0.25) 100%);
-  pointer-events:none;
-  z-index:1;
+  content:''; position:fixed; inset:0;
+  background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 55%, rgba(160,145,120,.2) 100%);
+  pointer-events:none; z-index:1;
 }
+section { position:relative; z-index:2; }
 
-section { position: relative; z-index: 2; }
-
-/* ── INK STROKE DIVIDERS (SVG) ── */
-.ink-stroke {
-  width: 100%;
-  overflow: visible;
-  display: block;
-  margin: 0;
-  line-height: 0;
-}
-
-/* ── NAV ── */
+/* ════ NAV ════ */
 nav {
-  position: fixed;
-  top:0; left:0; right:0;
-  z-index:100;
-  padding: 1.4rem 4rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: linear-gradient(to bottom, rgba(245,240,232,0.97), transparent);
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  padding:1.2rem 3rem;
+  display:flex; justify-content:space-between; align-items:center;
+  background:linear-gradient(to bottom, rgba(244,239,228,.97) 70%, transparent);
 }
 .nav-seal {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 1.3rem;
-  color: var(--seal-red);
-  letter-spacing: 0.1em;
-  position: relative;
+  font-family:'Noto Serif SC',serif; font-size:1.2rem; color:var(--seal-red);
+  width:42px; height:42px; border:2px solid var(--seal-red);
+  display:flex; align-items:center; justify-content:center;
+  transform:rotate(-3deg); flex-shrink:0;
 }
-.nav-seal::after {
-  content:'';
-  position:absolute;
-  inset: -4px;
-  border: 1.5px solid var(--seal-red);
-  transform: rotate(3deg);
-  opacity: 0.6;
-}
-.nav-links { display:flex; gap:3rem; list-style:none; }
+.nav-links { display:flex; gap:2.5rem; list-style:none; }
 .nav-links a {
-  font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  text-decoration: none;
-  transition: color 0.3s;
-  position: relative;
+  font-family:'Cinzel',serif; font-size:.68rem;
+  letter-spacing:.3em; text-transform:uppercase;
+  color:var(--ink-3); text-decoration:none; transition:color .3s;
 }
-.nav-links a::after {
-  content:'';
-  position:absolute;
-  bottom:-3px; left:0;
-  width:0; height:1px;
-  background: var(--ink-1);
-  transition: width 0.4s;
+.nav-links a:hover { color:var(--ink-0); }
+.nav-hamburger {
+  display:none; flex-direction:column; gap:5px; cursor:none; padding:4px;
 }
-.nav-links a:hover { color: var(--ink-0); }
-.nav-links a:hover::after { width:100%; }
+.nav-hamburger span { display:block; width:22px; height:1.5px; background:var(--ink-1); }
+.nav-mobile-menu {
+  display:none; position:fixed; inset:0;
+  background:rgba(244,239,228,.97); z-index:99;
+  flex-direction:column; align-items:center; justify-content:center; gap:3rem;
+}
+.nav-mobile-menu.open { display:flex; }
+.nav-mobile-menu a {
+  font-family:'Cinzel',serif; font-size:1.1rem;
+  letter-spacing:.35em; text-transform:uppercase;
+  color:var(--ink-1); text-decoration:none;
+}
+.nav-close {
+  position:absolute; top:1.5rem; right:2rem;
+  font-family:'Cinzel',serif; font-size:1.2rem; color:var(--ink-2); cursor:none;
+}
 
-/* ── HERO ── */
+/* ════ HERO ════ */
 #hero {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  padding: 7rem 2rem 5rem;
-  position: relative;
+  min-height:100vh; min-height:100svh;
+  display:flex; flex-direction:column;
+  justify-content:center; align-items:center;
+  text-align:center; padding:7rem 1.5rem 5rem;
+  position:relative; overflow:hidden;
 }
-
-/* Ink reveal animation */
-.ink-reveal {
-  opacity: 0;
-  filter: blur(8px);
-  transform: translateY(20px);
-  animation: inkReveal 1.4s cubic-bezier(0.16,1,0.3,1) forwards;
-}
-@keyframes inkReveal {
-  to { opacity:1; filter:blur(0); transform:translateY(0); }
-}
-
 .hero-kanji {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(5rem, 18vw, 14rem);
-  font-weight: 300;
-  color: var(--ink-0);
-  line-height: 1;
-  opacity: 0;
-  animation: inkBrush 2s cubic-bezier(0.16,1,0.3,1) 0.2s forwards;
-  position: relative;
-  letter-spacing: -0.05em;
-  text-shadow: 3px 4px 12px rgba(26,21,16,0.12);
+  font-family:'Noto Serif SC',serif;
+  font-size:clamp(4.5rem,18vw,13rem);
+  font-weight:300; line-height:1; color:var(--ink-0);
+  text-shadow:2px 3px 14px rgba(26,21,16,.1);
+  position:relative; z-index:4;
 }
-@keyframes inkBrush {
-  0%   { opacity:0; filter:blur(20px) saturate(0); transform: scale(0.92); }
-  40%  { opacity:0.7; filter:blur(4px) saturate(0.5); }
-  100% { opacity:1; filter:blur(0) saturate(1); transform: scale(1); }
-}
-
 .hero-name-en {
-  font-family: 'Cinzel', serif;
-  font-size: clamp(0.65rem, 1.5vw, 0.85rem);
-  letter-spacing: 0.5em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  margin-top: 0.5rem;
-  opacity: 0;
-  animation: inkReveal 1s 1.2s forwards;
+  font-family:'Cinzel',serif;
+  font-size:clamp(.6rem,1.8vw,.82rem);
+  letter-spacing:.45em; text-transform:uppercase;
+  color:var(--ink-3); margin-top:.6rem; z-index:4; position:relative;
 }
-
 .hero-tao {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: clamp(1rem, 2.2vw, 1.35rem);
-  color: var(--ink-2);
-  max-width: 580px;
-  line-height: 1.9;
-  margin-top: 3rem;
-  opacity: 0;
-  animation: inkReveal 1.4s 1.6s forwards;
-  position: relative;
-  padding: 0 2rem;
+  font-family:'IM Fell DW Pica',serif; font-style:italic;
+  font-size:clamp(.95rem,2.2vw,1.3rem);
+  color:var(--ink-2); max-width:560px; line-height:1.95;
+  margin-top:2.5rem; padding:0 1.8rem; position:relative; z-index:4;
 }
-.hero-tao::before, .hero-tao::after {
-  font-family: 'Noto Serif SC', serif;
-  font-style: normal;
-  color: var(--vermillion);
-  font-size: 2rem;
-  position: absolute;
-  opacity: 0.4;
-}
-.hero-tao::before { content:'「'; left:0; top:-0.3em; }
-.hero-tao::after  { content:'」'; right:0; bottom:-0.5em; }
-
-.hero-tao-src {
-  display: block;
-  font-family: 'Cinzel', serif;
-  font-style: normal;
-  font-size: 0.65rem;
-  letter-spacing: 0.25em;
-  color: var(--ink-4);
-  margin-top: 1rem;
-  text-align: right;
-}
-
-.hero-sub {
-  font-family: 'Cinzel', serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.4em;
-  color: var(--ink-4);
-  margin-top: 3rem;
-  text-transform: uppercase;
-  opacity: 0;
-  animation: inkReveal 1s 2.2s forwards;
-}
-
-.hero-cta-row {
-  display: flex;
-  gap: 1.5rem;
-  margin-top: 2.5rem;
-  opacity: 0;
-  animation: inkReveal 1s 2.5s forwards;
-}
+.hero-tao::before { content:'「'; position:absolute; left:.1rem; top:-.2em; font-family:'Noto Serif SC',serif; font-style:normal; color:var(--vermillion); font-size:1.8rem; opacity:.45; }
+.hero-tao::after  { content:'」'; position:absolute; right:.1rem; bottom:-.4em; font-family:'Noto Serif SC',serif; font-style:normal; color:var(--vermillion); font-size:1.8rem; opacity:.45; }
+.hero-tao-src { display:block; font-family:'Cinzel',serif; font-style:normal; font-size:.6rem; letter-spacing:.25em; color:var(--ink-4); margin-top:.8rem; text-align:right; }
+.hero-sub { font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:.4em; color:var(--ink-4); margin-top:2.5rem; text-transform:uppercase; position:relative; z-index:4; }
+.hero-cta-row { display:flex; gap:1.2rem; margin-top:2.2rem; flex-wrap:wrap; justify-content:center; position:relative; z-index:4; }
 .btn-ink {
-  font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  padding: 0.8rem 2.2rem;
-  background: var(--ink-0);
-  color: var(--rice);
-  text-decoration: none;
-  border: none;
-  cursor: none;
-  transition: background 0.3s, transform 0.3s;
-  position: relative;
-  overflow: hidden;
+  font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
+  padding:.85rem 2rem; background:var(--ink-0); color:var(--rice); text-decoration:none; cursor:none;
+  transition:background .3s, transform .25s;
 }
-.btn-ink::after {
-  content:'';
-  position:absolute;
-  inset:0;
-  background: var(--vermillion);
-  transform: translateX(-100%);
-  transition: transform 0.4s ease;
-  z-index:-1;
-}
-.btn-ink:hover { background: var(--vermillion); transform: translateY(-2px); }
-
+.btn-ink:hover { background:var(--vermillion); transform:translateY(-2px); }
 .btn-ink-outline {
-  font-family: 'Cinzel', serif;
-  font-size: 0.68rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  padding: 0.8rem 2.2rem;
-  background: transparent;
-  color: var(--ink-1);
-  text-decoration: none;
-  border: 1px solid var(--ink-3);
-  cursor: none;
-  transition: all 0.3s;
+  font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
+  padding:.85rem 2rem; background:transparent; color:var(--ink-1); text-decoration:none;
+  border:1px solid var(--ink-3); cursor:none; transition:all .3s;
 }
-.btn-ink-outline:hover { border-color: var(--ink-0); color: var(--ink-0); }
+.btn-ink-outline:hover { border-color:var(--ink-0); color:var(--ink-0); }
+.scroll-hint {
+  position:absolute; bottom:2rem; left:50%; transform:translateX(-50%);
+  display:flex; flex-direction:column; align-items:center; gap:.4rem; z-index:4;
+}
+.scroll-hint span { font-family:'Cinzel',serif; font-size:.55rem; letter-spacing:.4em; color:var(--ink-4); text-transform:uppercase; }
+.scroll-line { width:1px; height:50px; background:linear-gradient(to bottom,var(--ink-2),transparent); animation:scrollPulse 2.2s ease-in-out infinite; }
+@keyframes scrollPulse { 0%,100%{opacity:.35;transform:scaleY(.7);} 50%{opacity:.9;transform:scaleY(1);} }
 
-/* Scroll indicator */
-.scroll-brush {
-  position: absolute;
-  bottom: 2.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.4rem;
-  opacity: 0;
-  animation: inkReveal 1s 3s forwards;
+/* ════ INK DROP REVEAL ════ */
+.idr {
+  opacity:0;
 }
-.scroll-brush span {
-  font-family: 'Cinzel', serif;
-  font-size: 0.55rem;
-  letter-spacing: 0.4em;
-  color: var(--ink-4);
-  text-transform: uppercase;
+.idr.revealed {
+  animation: inkDrop 1.05s cubic-bezier(.16,1,.3,1) forwards;
 }
-.scroll-brush-line {
-  width: 1px; height: 55px;
-  background: linear-gradient(to bottom, var(--ink-2), transparent);
-  animation: brushDrop 2s ease-in-out infinite;
-}
-@keyframes brushDrop {
-  0%,100% { transform: scaleY(0.7); opacity:0.4; }
-  50% { transform: scaleY(1); opacity:1; }
+@keyframes inkDrop {
+  0%   { opacity:0; clip-path:circle(0% at var(--dx,50%) var(--dy,25%)); filter:blur(10px) saturate(0); }
+  45%  { opacity:.9; filter:blur(2px) saturate(.6); }
+  100% { opacity:1; clip-path:circle(150% at var(--dx,50%) var(--dy,25%)); filter:blur(0) saturate(1); }
 }
 
-/* ── SECTION COMMON ── */
-.scroll-chapter {
-  padding: 9rem 2rem;
-  position: relative;
-}
-.chapter-inner { max-width: 1100px; margin: 0 auto; }
+/* ════ SECTIONS ════ */
+.scroll-chapter { padding:8rem 1.5rem; }
+.chapter-inner { max-width:1080px; margin:0 auto; }
+.chapter-label { display:flex; align-items:center; gap:1.2rem; margin-bottom:3.5rem; }
+.chapter-label-cn { font-family:'Noto Serif SC',serif; font-size:.7rem; color:var(--vermillion); letter-spacing:.3em; writing-mode:vertical-rl; }
+.chapter-label-line { height:1px; width:80px; background:linear-gradient(to right,var(--ink-3),transparent); flex-shrink:0; }
+.chapter-title { font-family:'IM Fell DW Pica',serif; font-size:clamp(1.8rem,4.5vw,3.2rem); font-weight:400; color:var(--ink-0); line-height:1.15; font-style:italic; }
+.chapter-title em { font-style:normal; color:var(--vermillion); }
 
-.chapter-label {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  margin-bottom: 4rem;
-}
-.chapter-label-cn {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 0.75rem;
-  color: var(--vermillion);
-  letter-spacing: 0.3em;
-  writing-mode: vertical-rl;
-  line-height: 1;
-}
-.chapter-label-line {
-  flex:1;
-  height:1px;
-  background: linear-gradient(to right, var(--ink-3), transparent);
-  max-width: 120px;
-}
-.chapter-title {
-  font-family: 'IM Fell DW Pica', serif;
-  font-size: clamp(2rem, 5vw, 3.5rem);
-  font-weight: 400;
-  color: var(--ink-0);
-  line-height: 1.15;
-  font-style: italic;
-}
-.chapter-title em {
-  font-style: normal;
-  color: var(--vermillion);
-}
+/* ════ ABOUT ════ */
+.about-layout { display:grid; grid-template-columns:1fr 1.3fr; gap:5rem; align-items:start; }
+.about-kanji-col { display:flex; flex-direction:column; align-items:center; gap:2rem; position:relative; }
+.vertical-kanji { font-family:'Noto Serif SC',serif; font-size:clamp(2rem,6vw,5rem); font-weight:300; color:var(--ink-1); writing-mode:vertical-rl; line-height:1.3; letter-spacing:.1em; opacity:.08; position:absolute; right:0; top:0; pointer-events:none; user-select:none; }
+.seal-stamp { width:72px; height:72px; border:2px solid var(--seal-red); display:flex; align-items:center; justify-content:center; transform:rotate(-6deg); position:relative; flex-shrink:0; }
+.seal-stamp::before { content:''; position:absolute; inset:3px; border:1px solid var(--seal-red); opacity:.4; }
+.seal-stamp span { font-family:'Noto Serif SC',serif; font-size:1.5rem; color:var(--seal-red); }
+.about-text-col p { font-family:'IM Fell DW Pica',serif; font-size:1.05rem; line-height:2; color:var(--ink-2); margin-bottom:1.6rem; }
+.about-text-col p em { color:var(--ink-0); font-style:normal; font-weight:700; }
+.about-text-col p i  { color:var(--vermillion); }
+.tao-pull { margin:2.5rem 0; padding:1.8rem 2rem; border-left:2px solid var(--ink-0); background:rgba(26,21,16,.03); position:relative; }
+.tao-pull p { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:1.1rem; line-height:1.85; color:var(--ink-1); margin:0; }
+.tao-pull::before { content:'道'; position:absolute; right:1.2rem; top:50%; transform:translateY(-50%); font-family:'Noto Serif SC',serif; font-size:3.5rem; color:var(--ink-0); opacity:.04; user-select:none; }
 
-/* ── ABOUT ── */
-#about { background: transparent; }
-.about-layout {
-  display: grid;
-  grid-template-columns: 1fr 1.2fr;
-  gap: 6rem;
-  align-items: start;
-}
-.about-kanji-column {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-}
-.vertical-kanji {
-  font-family: 'Noto Serif SC', serif;
-  font-size: clamp(3rem, 8vw, 6rem);
-  font-weight: 300;
-  color: var(--ink-1);
-  writing-mode: vertical-rl;
-  line-height: 1.3;
-  letter-spacing: 0.1em;
-  opacity: 0.12;
-  position: absolute;
-  right: 0; top: 0;
-  pointer-events: none;
-  user-select: none;
-}
-.seal-stamp {
-  width: 80px; height: 80px;
-  border: 2px solid var(--seal-red);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotate(-6deg);
-  position: relative;
-}
-.seal-stamp::before {
-  content:'';
-  position:absolute;
-  inset:3px;
-  border:1px solid var(--seal-red);
-  opacity:0.4;
-}
-.seal-stamp span {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 1.6rem;
-  color: var(--seal-red);
-  line-height:1;
-}
+/* ════ SKILLS ════ */
+#skills { background:rgba(26,21,16,.025); }
+.skills-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.2rem; }
+.skill-card { background:rgba(244,239,228,.9); border:1px solid rgba(26,21,16,.1); padding:1.8rem; position:relative; overflow:hidden; transition:transform .35s, box-shadow .35s; }
+.skill-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--ink-0); transform:scaleX(0); transform-origin:left; transition:transform .4s ease; }
+.skill-card:hover { transform:translateY(-5px); box-shadow:0 14px 40px rgba(26,21,16,.1); }
+.skill-card:hover::after { transform:scaleX(1); }
+.skill-card-title { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.3em; color:var(--vermillion); margin-bottom:1.1rem; text-transform:uppercase; }
+.skill-pills { display:flex; flex-wrap:wrap; gap:.4rem; }
+.skill-pill { font-family:'Noto Serif',serif; font-size:.78rem; padding:.22rem .7rem; border:1px solid rgba(26,21,16,.15); color:var(--ink-2); background:transparent; transition:all .25s; cursor:default; }
+.skill-pill:hover { background:var(--ink-0); color:var(--rice); border-color:var(--ink-0); }
 
-.about-ink-painting {
-  position: relative;
-  height: 320px;
-}
-
-.about-text-col p {
-  font-family: 'IM Fell DW Pica', serif;
-  font-size: 1.05rem;
-  line-height: 2;
-  color: var(--ink-2);
-  margin-bottom: 1.8rem;
-}
-.about-text-col p em { color: var(--ink-0); font-style: normal; font-weight: 700; }
-.about-text-col p i { color: var(--vermillion); }
-
-.tao-pull {
-  margin: 3rem 0;
-  padding: 2rem 2.5rem;
-  border-left: 2px solid var(--ink-0);
-  background: rgba(26,21,16,0.03);
-  position: relative;
-}
-.tao-pull p {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: 1.15rem;
-  line-height: 1.8;
-  color: var(--ink-1);
-  margin: 0;
-}
-.tao-pull::before {
-  content: '道';
-  position: absolute;
-  right: 1.5rem; top: 50%;
-  transform: translateY(-50%);
-  font-family: 'Noto Serif SC', serif;
-  font-size: 4rem;
-  color: var(--ink-0);
-  opacity: 0.05;
-  user-select: none;
-}
-
-/* ── SKILLS ── */
-#skills {
-  background: rgba(26,21,16,0.03);
-}
-.skills-scroll {
-  display: flex;
-  gap: 2rem;
-  flex-wrap: wrap;
-}
-.skill-scroll-item {
-  background: rgba(245,240,232,0.8);
-  border: 1px solid rgba(26,21,16,0.12);
-  padding: 2rem 2rem;
-  min-width: 220px;
-  position: relative;
-  flex: 1;
-  transition: transform 0.4s, box-shadow 0.4s;
-}
-.skill-scroll-item::before {
-  content: '';
-  position: absolute;
-  top:0; left:0; right:0;
-  height: 2px;
-  background: var(--ink-0);
-  transform: scaleX(0);
-  transform-origin: left;
-  transition: transform 0.4s ease;
-}
-.skill-scroll-item:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(26,21,16,0.1); }
-.skill-scroll-item:hover::before { transform: scaleX(1); }
-
-.skill-scroll-title {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.3em;
-  color: var(--vermillion);
-  text-transform: uppercase;
-  margin-bottom: 1.2rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-.skill-pills { display:flex; flex-wrap:wrap; gap:0.4rem; }
-.skill-pill {
-  font-family: 'Noto Serif', serif;
-  font-size: 0.8rem;
-  padding: 0.25rem 0.7rem;
-  background: transparent;
-  border: 1px solid rgba(26,21,16,0.18);
-  color: var(--ink-2);
-  transition: all 0.3s;
-}
-.skill-pill:hover { background: var(--ink-0); color: var(--rice); border-color: var(--ink-0); }
-
-/* ── PROJECTS ── */
-#projects { background: transparent; }
-
-.projects-scroll {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.project-chapter {
-  display: grid;
-  grid-template-columns: 80px 1fr;
-  gap: 0 3rem;
-  padding: 4rem 0;
-  border-bottom: 1px solid rgba(26,21,16,0.1);
-  transition: background 0.3s;
-  position: relative;
-}
-.project-chapter:last-child { border-bottom: none; }
-.project-chapter:hover { background: rgba(26,21,16,0.02); }
-
-.project-num-cn {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 2.5rem;
-  font-weight: 300;
-  color: var(--ink-0);
-  opacity: 0.15;
-  writing-mode: vertical-rl;
-  letter-spacing: 0.1em;
-  line-height: 1;
-  user-select: none;
-  align-self: start;
-  padding-top: 0.2rem;
-}
-
-.project-body { display:flex; flex-direction:column; gap:0.8rem; }
-
-.project-tag-row { display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap; }
-.project-tag {
-  font-family: 'Cinzel', serif;
-  font-size: 0.58rem;
-  letter-spacing: 0.25em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.7rem;
-  border: 1px solid rgba(26,21,16,0.2);
-  color: var(--ink-3);
-}
-.project-tag.wip { border-color: var(--vermillion-dim); color: var(--vermillion-dim); }
-
-.project-title {
-  font-family: 'IM Fell DW Pica', serif;
-  font-size: clamp(1.4rem, 3vw, 2rem);
-  font-weight: 400;
-  color: var(--ink-0);
-  line-height: 1.2;
-}
-
-.project-desc {
-  font-family: 'Noto Serif', serif;
-  font-size: 0.95rem;
-  line-height: 1.9;
-  color: var(--ink-3);
-  max-width: 680px;
-}
-
-.project-link-row { display:flex; gap:1.5rem; align-items:center; margin-top:0.5rem; }
-.project-link {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-1);
-  text-decoration: none;
-  border-bottom: 1px solid var(--ink-3);
-  padding-bottom: 2px;
-  transition: border-color 0.3s, color 0.3s;
-}
-.project-link:hover { color: var(--vermillion); border-color: var(--vermillion); }
-
-/* Graveyard */
-.graveyard-ink {
-  margin-top: 4rem;
-  padding: 3rem;
-  background: rgba(26,21,16,0.04);
-  border: 1px solid rgba(26,21,16,0.08);
-  text-align: center;
-  position: relative;
-}
-.graveyard-ink::before {
-  content: '逝';
-  font-family: 'Noto Serif SC', serif;
-  font-size: 8rem;
-  font-weight: 300;
-  color: var(--ink-0);
-  opacity: 0.03;
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  user-select: none;
-}
-.graveyard-title-ink {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: 0.85rem;
-  color: var(--ink-4);
-  letter-spacing: 0.15em;
-  margin-bottom: 1.5rem;
-}
+/* ════ PROJECTS ════ */
+.projects-list { display:flex; flex-direction:column; }
+.project-row { display:grid; grid-template-columns:64px 1fr; gap:0 2.5rem; padding:3.5rem 0; border-bottom:1px solid rgba(26,21,16,.09); transition:background .3s; }
+.project-row:last-child { border-bottom:none; }
+.project-row:hover { background:rgba(26,21,16,.02); }
+.project-num-cn { font-family:'Noto Serif SC',serif; font-size:2.2rem; font-weight:300; color:var(--ink-0); opacity:.12; writing-mode:vertical-rl; line-height:1; user-select:none; align-self:start; padding-top:.2rem; }
+.project-body { display:flex; flex-direction:column; gap:.7rem; }
+.project-tags { display:flex; gap:.6rem; flex-wrap:wrap; }
+.project-tag { font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.2em; text-transform:uppercase; padding:.18rem .65rem; border:1px solid rgba(26,21,16,.18); color:var(--ink-3); }
+.project-tag.wip { border-color:var(--vermillion-dim); color:var(--vermillion-dim); }
+.project-title { font-family:'IM Fell DW Pica',serif; font-size:clamp(1.3rem,3vw,1.9rem); font-weight:400; color:var(--ink-0); line-height:1.2; }
+.project-desc { font-family:'Noto Serif',serif; font-size:.92rem; line-height:1.9; color:var(--ink-3); max-width:640px; }
+.project-link { font-family:'Cinzel',serif; font-size:.63rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-1); text-decoration:none; border-bottom:1px solid var(--ink-3); padding-bottom:2px; transition:color .3s, border-color .3s; display:inline-block; align-self:start; }
+.project-link:hover { color:var(--vermillion); border-color:var(--vermillion); }
+.graveyard-ink { margin-top:3.5rem; padding:2.5rem; background:rgba(26,21,16,.03); border:1px solid rgba(26,21,16,.07); text-align:center; position:relative; overflow:hidden; }
+.graveyard-ink::before { content:'逝'; font-family:'Noto Serif SC',serif; font-size:7rem; color:var(--ink-0); opacity:.025; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); user-select:none; }
+.graveyard-label { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:.82rem; color:var(--ink-4); margin-bottom:1.2rem; }
 .fallen-row { display:flex; gap:2.5rem; justify-content:center; flex-wrap:wrap; }
-.fallen-ink {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: 1rem;
-  color: var(--ink-4);
-  opacity: 0.5;
-  text-decoration: line-through;
-  text-decoration-style: solid;
-  text-decoration-color: rgba(192,57,43,0.4);
-}
+.fallen-ink { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:1rem; color:var(--ink-4); opacity:.5; text-decoration:line-through; text-decoration-color:rgba(192,57,43,.4); }
 
-/* ── CLOSING TAO SECTION ── */
-#tao-close {
-  padding: 10rem 2rem;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-.tao-mountain-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.04;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-.tao-mountain-bg span {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 22rem;
-  font-weight: 300;
-  color: var(--ink-0);
-  line-height: 1;
-  user-select: none;
-  letter-spacing: -0.1em;
-}
-.tao-final-quote {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: clamp(1.2rem, 3vw, 1.9rem);
-  color: var(--ink-1);
-  max-width: 680px;
-  margin: 0 auto 1.5rem;
-  line-height: 1.8;
-}
-.tao-attribution {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.35em;
-  color: var(--vermillion);
-  text-transform: uppercase;
-}
+/* ════ CLOSING TAO ════ */
+#tao-close { padding:9rem 1.5rem; text-align:center; position:relative; overflow:hidden; }
+.tao-bg-k { position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; pointer-events:none; overflow:hidden; }
+.tao-bg-k span { font-family:'Noto Serif SC',serif; font-size:clamp(8rem,22vw,20rem); font-weight:300; color:var(--ink-0); opacity:.025; user-select:none; line-height:1; }
+.tao-final { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:clamp(1.1rem,2.8vw,1.8rem); color:var(--ink-1); max-width:640px; margin:0 auto 1.5rem; line-height:1.85; position:relative; z-index:2; }
+.tao-attr { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.35em; color:var(--vermillion); text-transform:uppercase; position:relative; z-index:2; }
 
-/* ── FOOTER ── */
-footer {
-  padding: 4rem 2rem;
-  border-top: 1px solid rgba(26,21,16,0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  max-width: 1100px;
-  margin: 0 auto;
-  z-index: 2;
-  position: relative;
-}
-.footer-seal {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.4rem;
-}
-.footer-seal-box {
-  width: 55px; height: 55px;
-  border: 2px solid var(--seal-red);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform: rotate(-4deg);
-  position: relative;
-}
-.footer-seal-box span {
-  font-family: 'Noto Serif SC', serif;
-  font-size: 1.2rem;
-  color: var(--seal-red);
-}
-.footer-name {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.3em;
-  color: var(--ink-4);
-  text-transform: uppercase;
-  margin-top: 0.5rem;
-}
-.footer-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 1rem;
-}
-.footer-links-row { display:flex; gap:2rem; }
-.footer-link {
-  font-family: 'Cinzel', serif;
-  font-size: 0.65rem;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  text-decoration: none;
-  transition: color 0.3s;
-}
-.footer-link:hover { color: var(--vermillion); }
-.footer-copy {
-  font-family: 'IM Fell DW Pica', serif;
-  font-style: italic;
-  font-size: 0.8rem;
-  color: var(--ink-4);
-  opacity: 0.6;
-}
+/* ════ FOOTER ════ */
+footer { padding:3.5rem 1.5rem; border-top:1px solid rgba(26,21,16,.1); display:flex; justify-content:space-between; align-items:center; max-width:1080px; margin:0 auto; position:relative; z-index:2; flex-wrap:wrap; gap:2rem; }
+.footer-seal-box { width:50px; height:50px; border:2px solid var(--seal-red); display:flex; align-items:center; justify-content:center; transform:rotate(-4deg); }
+.footer-seal-box span { font-family:'Noto Serif SC',serif; font-size:1.1rem; color:var(--seal-red); }
+.footer-name { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.3em; color:var(--ink-4); text-transform:uppercase; margin-top:.5rem; }
+.footer-right { display:flex; flex-direction:column; align-items:flex-end; gap:.8rem; }
+.footer-links-row { display:flex; gap:1.8rem; }
+.footer-link { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3); text-decoration:none; transition:color .3s; }
+.footer-link:hover { color:var(--vermillion); }
+.footer-copy { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:.8rem; color:var(--ink-4); opacity:.6; }
 
-/* ── SCROLL REVEAL ── */
-.ink-wash-in {
-  opacity: 0;
-  filter: blur(6px);
-  transform: translateY(30px);
-  transition: opacity 1s ease, filter 1.2s ease, transform 1s ease;
+/* ════ MOBILE ════ */
+@media (max-width:768px) {
+  nav { padding:1rem 1.2rem; }
+  .nav-links { display:none; }
+  .nav-hamburger { display:flex; }
+  .about-layout { grid-template-columns:1fr; gap:2.5rem; }
+  .about-kanji-col { flex-direction:row; justify-content:flex-start; }
+  .vertical-kanji { display:none; }
+  .project-row { grid-template-columns:1fr; gap:1rem; }
+  .project-num-cn { display:none; }
+  .skills-grid { grid-template-columns:1fr 1fr; }
+  footer { flex-direction:column; align-items:flex-start; }
+  .footer-right { align-items:flex-start; }
+  .scroll-chapter { padding:5rem 1.2rem; }
+  #tao-close { padding:6rem 1.2rem; }
+  .hero-cta-row { flex-direction:column; align-items:center; }
+  .btn-ink, .btn-ink-outline { width:100%; max-width:260px; text-align:center; }
 }
-.ink-wash-in.inked {
-  opacity: 1; filter: blur(0); transform: translateY(0);
-}
-.ink-wash-in:nth-child(2) { transition-delay: 0.1s; }
-.ink-wash-in:nth-child(3) { transition-delay: 0.2s; }
-.ink-wash-in:nth-child(4) { transition-delay: 0.3s; }
-
-/* ── INK DRIP (hero ambience) ── */
-.ink-drip {
-  position: absolute;
-  top: 0;
-  width: 1px;
-  background: linear-gradient(to bottom, var(--ink-0), transparent);
-  opacity: 0;
-  animation: dripDown linear infinite;
-  pointer-events: none;
-}
-@keyframes dripDown {
-  0%   { opacity:0; transform: scaleY(0); transform-origin: top; }
-  15%  { opacity: 0.08; }
-  85%  { opacity: 0.04; }
-  100% { opacity:0; transform: scaleY(1); transform-origin: top; }
-}
-
-/* ── BIRDS (SVG canvas animated) ── */
-#bird-canvas {
-  position: fixed;
-  top:0; left:0;
-  width:100%; height:100%;
-  z-index: 1;
-  pointer-events: none;
-}
-
-@media (max-width: 768px) {
-  nav { padding: 1rem 1.5rem; }
-  .nav-links { display: none; }
-  .about-layout { grid-template-columns: 1fr; }
-  .about-kanji-column { display: none; }
-  .project-chapter { grid-template-columns: 1fr; }
-  .project-num-cn { display: none; }
-  footer { flex-direction: column; gap: 2rem; align-items: center; }
+@media (max-width:480px) {
+  .skills-grid { grid-template-columns:1fr; }
+  .hero-tao { font-size:.9rem; padding:0 .8rem; }
+  .chapter-title { font-size:1.7rem; }
 }
 </style>
 </head>
 <body>
 
-<!-- Custom cursor -->
-<div class="cursor-dot" id="cursorDot"></div>
-<div id="trailContainer"></div>
-
-<!-- Three.js mountain/mist background -->
+<div id="cursorDot"></div>
+<canvas id="trailCanvas"></canvas>
 <canvas id="bg-canvas"></canvas>
-
-<!-- Birds canvas -->
 <canvas id="bird-canvas"></canvas>
 
 <!-- NAV -->
@@ -826,644 +296,426 @@ footer {
     <li><a href="#projects">Scroll III</a></li>
     <li><a href="https://github.com/Darkstrike03" target="_blank">Codex</a></li>
   </ul>
+  <div class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></div>
 </nav>
+<div class="nav-mobile-menu" id="mobileMenu">
+  <span class="nav-close" id="menuClose">✕</span>
+  <a href="#about"    onclick="closeMobileMenu()">Scroll I — The Practitioner</a>
+  <a href="#skills"   onclick="closeMobileMenu()">Scroll II — The Arts</a>
+  <a href="#projects" onclick="closeMobileMenu()">Scroll III — The Worlds</a>
+  <a href="https://github.com/Darkstrike03" target="_blank" onclick="closeMobileMenu()">GitHub Codex</a>
+</div>
 
-<!-- ══ HERO ══ -->
+<!-- HERO -->
 <section id="hero">
-
-  <!-- Ink drips -->
-  <div id="inkDrips"></div>
-
-  <h1 class="hero-kanji">暗撃</h1>
-  <p class="hero-name-en">DarkStrike · Builder of Digital Worlds</p>
-
-  <blockquote class="hero-tao" style="animation-delay:1.6s">
+  <h1 class="hero-kanji idr">暗撃</h1>
+  <p class="hero-name-en idr">DarkStrike · Builder of Digital Worlds</p>
+  <blockquote class="hero-tao idr">
     "The way that can be built is not true;<br>the world that can be constructed is not true."
     <span class="hero-tao-src">— Tao Te Ching · 道德經</span>
   </blockquote>
-
-  <p class="hero-sub">Full Stack · Design · Mobile · AI</p>
-
-  <div class="hero-cta-row">
+  <p class="hero-sub idr">Full Stack · Design · Mobile · AI</p>
+  <div class="hero-cta-row idr">
     <a href="#projects" class="btn-ink">Read the Scrolls</a>
     <a href="https://github.com/Darkstrike03" target="_blank" class="btn-ink-outline">GitHub</a>
   </div>
-
-  <div class="scroll-brush">
+  <div class="scroll-hint idr">
     <span>Unroll</span>
-    <div class="scroll-brush-line"></div>
+    <div class="scroll-line"></div>
   </div>
 </section>
 
-<!-- ══ ABOUT ══ -->
+<!-- ABOUT -->
 <section id="about" class="scroll-chapter">
   <div class="chapter-inner">
-    <div class="chapter-label ink-wash-in">
+    <div class="chapter-label idr">
       <span class="chapter-label-cn">一</span>
       <div class="chapter-label-line"></div>
       <h2 class="chapter-title">The <em>Practitioner</em></h2>
     </div>
-
     <div class="about-layout">
-      <div class="about-kanji-column ink-wash-in">
+      <div class="about-kanji-col idr">
         <div class="vertical-kanji">開発者設計者創造者</div>
         <div class="seal-stamp"><span>匠</span></div>
-        <!-- Ink painting rendered on canvas below -->
-        <canvas id="painting-canvas" width="280" height="300" style="opacity:0.75; margin-top:2rem;"></canvas>
+        <canvas id="painting-canvas" width="260" height="290" style="opacity:.78;margin-top:1.8rem;max-width:100%;"></canvas>
       </div>
-
       <div class="about-text-col">
-        <p class="ink-wash-in">
-          A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.
-        </p>
-        <p class="ink-wash-in">
-          Drawn to the deep wells of <i>webnovels</i> — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I build platforms as one builds a world: with hidden systems, layered lore, and spaces that breathe.
-        </p>
-        <div class="tao-pull ink-wash-in">
+        <p class="idr">A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.</p>
+        <p class="idr">Drawn to the deep wells of <i>webnovels</i> — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I build platforms as one builds a world: with hidden systems, layered lore, and spaces that breathe.</p>
+        <div class="tao-pull idr">
           <p>"The way that can be built is not true;<br>the world that can be constructed is not true."</p>
         </div>
-        <p class="ink-wash-in">
-          This is not contradiction — it is <em>compass</em>. Build anyway. Know it is incomplete. Then build deeper.
-        </p>
+        <p class="idr">This is not contradiction — it is <em>compass</em>. Build anyway. Know it is incomplete. Then build deeper.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ══ SKILLS ══ -->
+<!-- SKILLS -->
 <section id="skills" class="scroll-chapter">
   <div class="chapter-inner">
-    <div class="chapter-label ink-wash-in">
+    <div class="chapter-label idr">
       <span class="chapter-label-cn">二</span>
       <div class="chapter-label-line"></div>
       <h2 class="chapter-title">The <em>Arts</em> Mastered</h2>
     </div>
-    <div class="skills-scroll">
-      <div class="skill-scroll-item ink-wash-in">
-        <div class="skill-scroll-title">筆 · Brushwork (Frontend)</div>
-        <div class="skill-pills">
-          <span class="skill-pill">HTML</span><span class="skill-pill">CSS</span>
-          <span class="skill-pill">Tailwind</span><span class="skill-pill">React</span>
-          <span class="skill-pill">Next.js</span><span class="skill-pill">Figma</span>
-        </div>
-      </div>
-      <div class="skill-scroll-item ink-wash-in">
-        <div class="skill-scroll-title">鉄 · Ironwork (Backend)</div>
-        <div class="skill-pills">
-          <span class="skill-pill">Node.js</span><span class="skill-pill">Express</span>
-          <span class="skill-pill">Python</span><span class="skill-pill">Java</span>
-          <span class="skill-pill">MongoDB</span><span class="skill-pill">Oracle</span>
-        </div>
-      </div>
-      <div class="skill-scroll-item ink-wash-in">
-        <div class="skill-scroll-title">風 · Wind (Mobile)</div>
-        <div class="skill-pills">
-          <span class="skill-pill">Flutter</span><span class="skill-pill">Dart</span>
-        </div>
-      </div>
-      <div class="skill-scroll-item ink-wash-in">
-        <div class="skill-scroll-title">道 · Path (Tools)</div>
-        <div class="skill-pills">
-          <span class="skill-pill">Git</span><span class="skill-pill">VS Code</span>
-          <span class="skill-pill">Vercel</span><span class="skill-pill">Netlify</span>
-          <span class="skill-pill">GDScript</span>
-        </div>
-      </div>
+    <div class="skills-grid">
+      <div class="skill-card idr"><div class="skill-card-title">筆 · Brushwork · Frontend</div><div class="skill-pills"><span class="skill-pill">HTML</span><span class="skill-pill">CSS</span><span class="skill-pill">Tailwind</span><span class="skill-pill">React</span><span class="skill-pill">Next.js</span><span class="skill-pill">Figma</span></div></div>
+      <div class="skill-card idr"><div class="skill-card-title">鉄 · Ironwork · Backend</div><div class="skill-pills"><span class="skill-pill">Node.js</span><span class="skill-pill">Express</span><span class="skill-pill">Python</span><span class="skill-pill">Java</span><span class="skill-pill">MongoDB</span><span class="skill-pill">Oracle</span></div></div>
+      <div class="skill-card idr"><div class="skill-card-title">風 · Wind · Mobile</div><div class="skill-pills"><span class="skill-pill">Flutter</span><span class="skill-pill">Dart</span></div></div>
+      <div class="skill-card idr"><div class="skill-card-title">道 · Path · Tools</div><div class="skill-pills"><span class="skill-pill">Git</span><span class="skill-pill">VS Code</span><span class="skill-pill">Vercel</span><span class="skill-pill">Netlify</span><span class="skill-pill">GDScript</span></div></div>
     </div>
   </div>
 </section>
 
-<!-- ══ PROJECTS ══ -->
+<!-- PROJECTS -->
 <section id="projects" class="scroll-chapter">
   <div class="chapter-inner">
-    <div class="chapter-label ink-wash-in">
+    <div class="chapter-label idr">
       <span class="chapter-label-cn">三</span>
       <div class="chapter-label-line"></div>
       <h2 class="chapter-title">Worlds <em>Constructed</em></h2>
     </div>
-
-    <div class="projects-scroll">
-
-      <div class="project-chapter ink-wash-in">
-        <div class="project-num-cn">壱</div>
-        <div class="project-body">
-          <div class="project-tag-row">
-            <span class="project-tag">Platform · Full Stack</span>
-          </div>
-          <div class="project-title">Otaku's Library</div>
-          <p class="project-desc">A vast living archive — Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p>
-          <div class="project-link-row">
-            <a href="https://www.otakuslibrary.com/" target="_blank" class="project-link">Visit →</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="project-chapter ink-wash-in">
-        <div class="project-num-cn">弐</div>
-        <div class="project-body">
-          <div class="project-tag-row">
-            <span class="project-tag">App · Flutter · Dart</span>
-            <span class="project-tag">Web · Android · Windows</span>
-          </div>
-          <div class="project-title">Gensaku</div>
-          <p class="project-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows unified under a single vision.</p>
-          <div class="project-link-row">
-            <a href="https://gensaku.vercel.app/" target="_blank" class="project-link">Visit →</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="project-chapter ink-wash-in">
-        <div class="project-num-cn">参</div>
-        <div class="project-body">
-          <div class="project-tag-row">
-            <span class="project-tag">Web · Gamified</span>
-          </div>
-          <div class="project-title">Localore</div>
-          <p class="project-desc">Folklore and mythological creatures from every culture, discovered through play. Knowledge as adventure — mythology made interactive.</p>
-          <div class="project-link-row">
-            <a href="https://localore.vercel.app/" target="_blank" class="project-link">Visit →</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="project-chapter ink-wash-in">
-        <div class="project-num-cn">四</div>
-        <div class="project-body">
-          <div class="project-tag-row">
-            <span class="project-tag">Web · Utility</span>
-          </div>
-          <div class="project-title">Rocket Transfers</div>
-          <p class="project-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p>
-          <div class="project-link-row">
-            <a href="https://rocket-transfers.vercel.app/" target="_blank" class="project-link">Visit →</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="project-chapter ink-wash-in">
-        <div class="project-num-cn">五</div>
-        <div class="project-body">
-          <div class="project-tag-row">
-            <span class="project-tag wip">In Cultivation · AI</span>
-          </div>
-          <div class="project-title">Aetheria</div>
-          <p class="project-desc">An AI model constructed from scratch on Kaggle — neuron by neuron, epoch by epoch. A digital grimoire being written in real time.</p>
-          <div class="project-link-row">
-            <span style="font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.2em; color:var(--vermillion-dim);">Cultivating...</span>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /projects-scroll -->
-
-    <div class="graveyard-ink ink-wash-in">
-      <p class="graveyard-title-ink">— Worlds that returned to the Void —</p>
-      <div class="fallen-row">
-        <span class="fallen-ink">Tralia · Connect Hidden Places</span>
-        <span class="fallen-ink">1Pulse · One Stop Medical App</span>
-      </div>
+    <div class="projects-list">
+      <div class="project-row idr"><div class="project-num-cn">壱</div><div class="project-body"><div class="project-tags"><span class="project-tag">Platform · Full Stack</span></div><div class="project-title">Otaku's Library</div><p class="project-desc">A vast living archive — Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p><a href="https://www.otakuslibrary.com/" target="_blank" class="project-link">Visit →</a></div></div>
+      <div class="project-row idr"><div class="project-num-cn">弐</div><div class="project-body"><div class="project-tags"><span class="project-tag">App · Flutter · Dart</span><span class="project-tag">Web · Android · Windows</span></div><div class="project-title">Gensaku</div><p class="project-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows unified under a single vision.</p><a href="https://gensaku.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
+      <div class="project-row idr"><div class="project-num-cn">参</div><div class="project-body"><div class="project-tags"><span class="project-tag">Web · Gamified</span></div><div class="project-title">Localore</div><p class="project-desc">Folklore and mythological creatures from every culture, discovered through play. Knowledge as adventure — mythology made interactive.</p><a href="https://localore.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
+      <div class="project-row idr"><div class="project-num-cn">四</div><div class="project-body"><div class="project-tags"><span class="project-tag">Web · Utility</span></div><div class="project-title">Rocket Transfers</div><p class="project-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p><a href="https://rocket-transfers.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
+      <div class="project-row idr"><div class="project-num-cn">五</div><div class="project-body"><div class="project-tags"><span class="project-tag wip">In Cultivation · AI</span></div><div class="project-title">Aetheria</div><p class="project-desc">An AI model constructed from scratch on Kaggle — neuron by neuron, epoch by epoch. A digital grimoire written in real time.</p><span style="font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.2em;color:var(--vermillion-dim);">Cultivating...</span></div></div>
+    </div>
+    <div class="graveyard-ink idr">
+      <p class="graveyard-label">— Worlds that returned to the Void —</p>
+      <div class="fallen-row"><span class="fallen-ink">Tralia · Connect Hidden Places</span><span class="fallen-ink">1Pulse · One Stop Medical App</span></div>
     </div>
   </div>
 </section>
 
-<!-- ══ CLOSING TAO ══ -->
+<!-- CLOSING TAO -->
 <section id="tao-close">
-  <div class="tao-mountain-bg"><span>山道</span></div>
-  <p class="tao-final-quote ink-wash-in">
-    "The way that can be built is not true;<br>
-    the world that can be constructed is not true.<br>
-    <br>
-    <span style="font-size:0.85em; opacity:0.7;">Yet here we are — building.</span>"
-  </p>
-  <p class="tao-attribution ink-wash-in">道德經 · Tao Te Ching</p>
+  <div class="tao-bg-k"><span>山道</span></div>
+  <p class="tao-final idr">"The way that can be built is not true;<br>the world that can be constructed is not true.<br><br><span style="font-size:.85em;opacity:.65;">Yet here we are — building.</span>"</p>
+  <p class="tao-attr idr">道德經 · Tao Te Ching</p>
 </section>
 
-<!-- ══ FOOTER ══ -->
+<!-- FOOTER -->
 <footer>
-  <div class="footer-seal">
-    <div class="footer-seal-box"><span>暗</span></div>
-    <div class="footer-name">DarkStrike · 2025</div>
-  </div>
+  <div><div class="footer-seal-box"><span>暗</span></div><div class="footer-name">DarkStrike · 2025</div></div>
   <div class="footer-right">
-    <div class="footer-links-row">
-      <a href="https://github.com/Darkstrike03" target="_blank" class="footer-link">GitHub</a>
-      <a href="#hero" class="footer-link">Return ↑</a>
-    </div>
+    <div class="footer-links-row"><a href="https://github.com/Darkstrike03" target="_blank" class="footer-link">GitHub</a><a href="#hero" class="footer-link">Return ↑</a></div>
     <p class="footer-copy">The scroll has no end. The way continues.</p>
   </div>
 </footer>
 
 <script>
-// ══ CURSOR — INK DOT + TRAIL ══
-const dot = document.getElementById('cursorDot');
-const trailContainer = document.getElementById('trailContainer');
+// ══════════════════════════════════
+//  MOBILE NAV
+// ══════════════════════════════════
+document.getElementById('hamburger').onclick = () => document.getElementById('mobileMenu').classList.add('open');
+document.getElementById('menuClose').onclick  = closeMobileMenu;
+function closeMobileMenu(){ document.getElementById('mobileMenu').classList.remove('open'); }
 
-const TRAIL_LENGTH = 22;
-const trail = [];
+// ══════════════════════════════════
+//  CURSOR — dot + fluid canvas trail
+// ══════════════════════════════════
+const cursorDot = document.getElementById('cursorDot');
+const tc = document.getElementById('trailCanvas');
+const tctx = tc.getContext('2d');
+function resizeTC(){ tc.width=innerWidth; tc.height=innerHeight; }
+resizeTC(); window.addEventListener('resize', resizeTC);
 
-// Pre-create trail dots
-for (let i = 0; i < TRAIL_LENGTH; i++) {
-  const el = document.createElement('div');
-  el.className = 'cursor-trail-dot';
-  const progress = i / TRAIL_LENGTH; // 0 = newest, 1 = oldest
-  const size = Math.max(1, 5.5 * (1 - progress * 0.85));
-  el.style.width  = size + 'px';
-  el.style.height = size + 'px';
-  el.style.opacity = (1 - progress) * 0.72;
-  trailContainer.appendChild(el);
-  trail.push({ el, x: -100, y: -100 });
-}
+const HIST = 42;
+// Chain of lagged positions
+const chain = Array.from({length:HIST}, ()=>({x:-300,y:-300}));
+let mx=-300, my=-300;
 
-let mx = -100, my = -100;
-// History of recent mouse positions for trail to follow
-const history = Array(TRAIL_LENGTH + 1).fill(null).map(() => ({ x: -100, y: -100 }));
-
-document.addEventListener('mousemove', e => {
-  mx = e.clientX;
-  my = e.clientY;
-  dot.style.left = mx + 'px';
-  dot.style.top  = my + 'px';
+document.addEventListener('mousemove', e=>{
+  mx=e.clientX; my=e.clientY;
+  cursorDot.style.left=mx+'px'; cursorDot.style.top=my+'px';
 });
 
-// Ink splat on click
-document.addEventListener('click', e => {
-  const s = document.createElement('div');
-  s.className = 'ink-splat';
-  const size = 30 + Math.random() * 40;
-  s.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;width:${size}px;height:${size * 0.7}px;`;
-  document.body.appendChild(s);
-  setTimeout(() => s.remove(), 1300);
+// Click: SVG ink splat
+document.addEventListener('click', e=>{
+  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+  const s=55+Math.random()*50;
+  svg.setAttribute('width',s); svg.setAttribute('height',s*.8);
+  svg.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;transform:translate(-50%,-50%) rotate(${Math.random()*30-15}deg);pointer-events:none;z-index:9990;`;
+  svg.innerHTML=`
+    <ellipse cx="${s*.5}" cy="${s*.4}" rx="${s*.36}" ry="${s*.26}" fill="rgba(26,21,16,.13)"/>
+    <ellipse cx="${s*.28}" cy="${s*.54}" rx="${s*.1}" ry="${s*.07}" fill="rgba(26,21,16,.08)"/>
+    <ellipse cx="${s*.74}" cy="${s*.36}" rx="${s*.08}" ry="${s*.05}" fill="rgba(26,21,16,.08)"/>
+    <ellipse cx="${s*.5}"  cy="${s*.7}"  rx="${s*.06}" ry="${s*.09}" fill="rgba(26,21,16,.07)"/>
+    <ellipse cx="${s*.2}"  cy="${s*.28}" rx="${s*.04}" ry="${s*.04}" fill="rgba(26,21,16,.06)"/>`;
+  document.body.appendChild(svg);
+  svg.classList.add('ink-splat-el');
+  setTimeout(()=>svg.remove(),1500);
 });
 
-function animateTrail() {
-  requestAnimationFrame(animateTrail);
+(function loopTrail(){
+  requestAnimationFrame(loopTrail);
 
-  // Push latest mouse pos into history
-  history.unshift({ x: mx, y: my });
-  history.pop();
+  // Propagate chain: each point chases the one ahead of it
+  chain[0].x += (mx - chain[0].x) * .52;
+  chain[0].y += (my - chain[0].y) * .52;
+  for(let i=1;i<HIST;i++){
+    const lag = .38 - i*.007;
+    chain[i].x += (chain[i-1].x - chain[i].x) * Math.max(lag,.08);
+    chain[i].y += (chain[i-1].y - chain[i].y) * Math.max(lag,.08);
+  }
 
-  // Each trail dot lags behind — ink drag effect
-  // Use a lerp-chain so each dot smoothly chases the one before
-  trail.forEach((t, i) => {
-    const target = history[Math.min(i * 1.4 | 0, history.length - 1)];
-    t.x += (target.x - t.x) * (0.42 - i * 0.012);
-    t.y += (target.y - t.y) * (0.42 - i * 0.012);
-    t.el.style.left = t.x + 'px';
-    t.el.style.top  = t.y + 'px';
-  });
-}
-animateTrail();
+  tctx.clearRect(0,0,tc.width,tc.height);
+  if(chain[0].x < 0) return;
 
-// ══ THREE.JS — INK WASH MOUNTAINS / MIST ══
-const canvas3 = document.getElementById('bg-canvas');
-const renderer = new THREE.WebGLRenderer({canvas:canvas3, antialias:true, alpha:true});
+  // Draw as ONE continuous tapered stroke
+  tctx.beginPath();
+  tctx.moveTo(chain[0].x, chain[0].y);
+  for(let i=1;i<HIST-1;i++){
+    // Midpoint smoothing
+    const cx = (chain[i].x+chain[i+1].x)*.5;
+    const cy = (chain[i].y+chain[i+1].y)*.5;
+    tctx.quadraticCurveTo(chain[i].x, chain[i].y, cx, cy);
+  }
+
+  // Stroke with gradient: thick+opaque at head, thin+transparent at tail
+  const head = chain[0], tail = chain[HIST-1];
+  const grad = tctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
+  grad.addColorStop(0,   'rgba(26,21,16,.58)');
+  grad.addColorStop(.3,  'rgba(26,21,16,.32)');
+  grad.addColorStop(.65, 'rgba(26,21,16,.12)');
+  grad.addColorStop(1,   'rgba(26,21,16,0)');
+
+  tctx.strokeStyle = grad;
+  tctx.lineWidth   = 5;
+  tctx.lineCap     = 'round';
+  tctx.lineJoin    = 'round';
+  tctx.stroke();
+
+  // Second thinner pass for a wet-ink inner shine
+  tctx.beginPath();
+  tctx.moveTo(chain[0].x, chain[0].y);
+  for(let i=1;i<Math.floor(HIST*.6)-1;i++){
+    const cx=(chain[i].x+chain[i+1].x)*.5;
+    const cy=(chain[i].y+chain[i+1].y)*.5;
+    tctx.quadraticCurveTo(chain[i].x,chain[i].y,cx,cy);
+  }
+  const grad2=tctx.createLinearGradient(head.x,head.y,chain[Math.floor(HIST*.6)].x,chain[Math.floor(HIST*.6)].y);
+  grad2.addColorStop(0,'rgba(26,21,16,.22)');
+  grad2.addColorStop(1,'rgba(26,21,16,0)');
+  tctx.strokeStyle=grad2; tctx.lineWidth=2; tctx.stroke();
+})();
+
+// ══════════════════════════════════
+//  THREE.JS BACKGROUND — fixed sun
+// ══════════════════════════════════
+const c3=document.getElementById('bg-canvas');
+const renderer=new THREE.WebGLRenderer({canvas:c3,antialias:true,alpha:true});
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 renderer.setSize(innerWidth,innerHeight);
-renderer.setClearColor(0x000000,0);
-
-const scene = new THREE.Scene();
-const camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-
-// Full-screen quad shader — draws procedural ink-wash mountains
-const geo = new THREE.PlaneGeometry(2,2);
-const mat = new THREE.ShaderMaterial({
-  transparent: true,
-  uniforms: {
-    uTime: {value:0},
-    uScroll: {value:0},
-    uMouse: {value: new THREE.Vector2(0.5,0.5)},
-    uRes: {value: new THREE.Vector2(innerWidth,innerHeight)}
+renderer.setClearColor(0,0);
+const sc3=new THREE.Scene(), cm3=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+const g3=new THREE.PlaneGeometry(2,2);
+const m3=new THREE.ShaderMaterial({
+  transparent:true,
+  uniforms:{
+    uT:{value:0}, uS:{value:0},
+    uM:{value:new THREE.Vector2(.5,.5)},
+    uR:{value:new THREE.Vector2(innerWidth,innerHeight)}
   },
-  vertexShader:`
-    void main(){gl_Position=vec4(position,1.);}
-  `,
+  vertexShader:`void main(){gl_Position=vec4(position,1.);}`,
   fragmentShader:`
-    uniform float uTime;
-    uniform float uScroll;
-    uniform vec2 uMouse;
-    uniform vec2 uRes;
-
+    uniform float uT,uS;
+    uniform vec2 uM,uR;
     float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}
     float noise(vec2 p){
-      vec2 i=floor(p), f=fract(p);
+      vec2 i=floor(p),f=fract(p);
       float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
       vec2 u=f*f*(3.-2.*f);
       return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
     }
-    float fbm(vec2 p){
-      float v=0.,a=0.5;
-      for(int i=0;i<6;i++){v+=a*noise(p);p*=2.1;a*=0.5;}
-      return v;
-    }
-
-    // Mountain silhouette
-    float mountain(vec2 uv, float offset, float height, float roughness){
-      float n=fbm(vec2(uv.x*roughness+offset, uTime*0.02));
-      return height + n*0.25 - uv.y;
-    }
-
+    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*noise(p);p*=2.1;a*=.5;}return v;}
+    float mtn(vec2 uv,float off,float h,float r){return h+fbm(vec2(uv.x*r+off,uT*.018))*.22-uv.y;}
     void main(){
-      vec2 uv = gl_FragCoord.xy / uRes;
-      uv.y = 1.0 - uv.y;
-
-      // Scroll parallax
-      float scrollOff = uScroll * 0.0003;
-      vec2 mouse = uMouse;
-
-      // Rice paper base — very subtle warm
-      vec3 paper = vec3(0.961, 0.945, 0.91);
-
-      // Mist layer
-      float mistY = 0.55 + sin(uTime*0.08)*0.02 + fbm(vec2(uv.x*1.5, uTime*0.04))*0.06;
-      float mist = smoothstep(0.0, 0.35, abs(uv.y - mistY));
-      vec3 mistCol = vec3(0.92,0.90,0.87);
-
-      // Far mountains (very faint, gray)
-      float farMtn = mountain(uv, 3.7 + scrollOff*0.3, 0.52, 2.2);
-      float farAlpha = smoothstep(0.0, 0.015, farMtn) * 0.12;
-      vec3 farCol = vec3(0.72, 0.70, 0.68);
-
-      // Mid mountains
-      float midMtn = mountain(uv, 1.2 + scrollOff*0.6, 0.42, 3.1);
-      float midAlpha = smoothstep(0.0, 0.018, midMtn) * 0.22;
-      vec3 midCol = vec3(0.45, 0.42, 0.38);
-
-      // Near mountains (darker ink)
-      float nearMtn = mountain(uv, 0.0 + scrollOff, 0.28, 4.5);
-      float nearAlpha = smoothstep(0.0, 0.02, nearMtn) * 0.45;
-      vec3 nearCol = vec3(0.18, 0.16, 0.13);
-
-      // Water reflection (bottom strip)
-      float waterY = uv.y - 0.12;
-      float waterRipple = fbm(vec2(uv.x*8.0, uTime*0.3))*0.015;
-      float waterAlpha = smoothstep(0.0, 0.08, -(uv.y - 0.18 + waterRipple)) * 0.06;
-
-      // Vertical ink drip streaks
-      float drip1 = smoothstep(0.002,0.0, abs(uv.x-0.22)) * smoothstep(0.3,0.7,uv.y) * 0.04;
-      float drip2 = smoothstep(0.002,0.0, abs(uv.x-0.67)) * smoothstep(0.15,0.55,uv.y) * 0.03;
-
-      // Red sun
-      vec2 sunPos = vec2(0.52 + mouse.x*0.02, 0.22 - mouse.y*0.01);
-      float sunDist = length(uv - sunPos);
-      float sun = smoothstep(0.065, 0.055, sunDist);
-      float sunGlow = smoothstep(0.18, 0.055, sunDist) * 0.08;
-      vec3 sunCol = vec3(0.75, 0.22, 0.15);
-
-      // Compose
-      vec3 col = paper;
-      col = mix(col, mistCol, 1.0-mist);
-      col = mix(col, farCol, farAlpha);
-      col = mix(col, midCol, midAlpha);
-      col = mix(col, nearCol, nearAlpha);
-      col = mix(col, mix(col, vec3(0.78,0.88,0.92), 1.0), waterAlpha);
-      col += sunGlow * sunCol;
-      col = mix(col, sunCol, sun);
-      col -= (drip1+drip2);
-
-      // Vignette
-      float vig = 1.0 - smoothstep(0.4, 1.2, length((uv-0.5)*vec2(1.0,1.4)));
-      col = mix(col, paper*0.92, 1.0-vig*0.95);
-
-      // Edge ink bleed
-      float edgeBleed = smoothstep(0.96,1.0,uv.x) + smoothstep(0.04,0.0,uv.x);
-      col = mix(col, nearCol, edgeBleed*0.08);
-
-      gl_FragColor = vec4(col, 0.95);
+      // uv in [0,1] with y=0 at top
+      vec2 uv=gl_FragCoord.xy/uR; uv.y=1.-uv.y;
+      float asp=uR.x/uR.y;
+      float s=uS*.00022;
+      vec3 paper=vec3(.961,.945,.91);
+      vec3 sky=mix(vec3(.93,.908,.878),paper,smoothstep(0.,.7,uv.y));
+      // mist band
+      float mY=.52+sin(uT*.07)*.015+fbm(vec2(uv.x*1.2,uT*.035))*.05;
+      float mb=1.-smoothstep(0.,.28,abs(uv.y-mY));
+      // mountains
+      float f1=mtn(uv,3.6+s*.25,.56,2.0),f2=mtn(uv,1.1+s*.55,.44,3.0),f3=mtn(uv,0.+s,.30,4.2);
+      float fa=smoothstep(0.,.012,f1)*.1,ma=smoothstep(0.,.015,f2)*.2,na=smoothstep(0.,.018,f3)*.42;
+      // water
+      float wR=fbm(vec2(uv.x*9.,uT*.35))*.012;
+      float wA=smoothstep(0.,.07,-(uv.y-.17+wR))*.05;
+      // RED SUN — aspect-corrected so it stays circular on any screen
+      vec2 sc=vec2(.5+uM.x*.012,.195-uM.y*.007);
+      // stretch uv.x by 1/asp to match physical pixels
+      vec2 sd=(uv-sc)*vec2(asp,1.);
+      float sR=.044; // in aspect-corrected space → stays circular
+      float sDist=length(sd);
+      float sun=smoothstep(sR+.004,sR-.004,sDist);
+      float glow=smoothstep(sR*3.5,sR,sDist)*.055;
+      vec3 sunC=vec3(.76,.23,.14);
+      // compose
+      vec3 col=sky;
+      col=mix(col,vec3(.94,.924,.9),mb*.55);
+      col=mix(col,vec3(.73,.71,.68),fa);
+      col=mix(col,vec3(.44,.41,.37),ma);
+      col=mix(col,vec3(.18,.15,.12),na);
+      col=mix(col,mix(col,vec3(.78,.87,.92),1.),wA);
+      col+=glow*sunC;
+      col=mix(col,sunC,sun);
+      // vignette
+      float vig=smoothstep(0.,1.3,length((uv-.5)*vec2(1.,1.3)));
+      col=mix(col,paper*.91,vig*.28);
+      // edge bleed
+      float eb=smoothstep(.95,1.,uv.x)+smoothstep(.05,0.,uv.x);
+      col=mix(col,vec3(.18,.15,.12),eb*.055);
+      // grain
+      col+=(hash(uv*uR*.5+uT*.1)-.5)*.01;
+      gl_FragColor=vec4(clamp(col,0.,1.),.93);
     }
   `
 });
-scene.add(new THREE.Mesh(geo,mat));
-
-let scrollY=0, targetMX=0.5, targetMY=0.5, curMX=0.5, curMY=0.5;
-window.addEventListener('scroll',()=>scrollY=window.scrollY);
-document.addEventListener('mousemove',e=>{
-  targetMX=e.clientX/innerWidth;
-  targetMY=e.clientY/innerHeight;
-});
-
+sc3.add(new THREE.Mesh(g3,m3));
+let scrY=0,tMX=.5,tMY=.5,cMX=.5,cMY=.5;
+window.addEventListener('scroll',()=>scrY=scrollY);
+document.addEventListener('mousemove',e=>{tMX=e.clientX/innerWidth;tMY=e.clientY/innerHeight;});
 let t3=0;
-(function loop(){
-  requestAnimationFrame(loop);
-  t3+=0.016;
-  curMX += (targetMX-curMX)*0.04;
-  curMY += (targetMY-curMY)*0.04;
-  mat.uniforms.uTime.value=t3;
-  mat.uniforms.uScroll.value=scrollY;
-  mat.uniforms.uMouse.value.set(curMX,curMY);
-  renderer.render(scene,camera);
+(function loopBg(){
+  requestAnimationFrame(loopBg); t3+=.016;
+  cMX+=(tMX-cMX)*.04; cMY+=(tMY-cMY)*.04;
+  m3.uniforms.uT.value=t3; m3.uniforms.uS.value=scrY;
+  m3.uniforms.uM.value.set(cMX,cMY);
+  renderer.render(sc3,cm3);
 })();
-
 window.addEventListener('resize',()=>{
   renderer.setSize(innerWidth,innerHeight);
-  mat.uniforms.uRes.value.set(innerWidth,innerHeight);
+  m3.uniforms.uR.value.set(innerWidth,innerHeight);
 });
 
-// ══ BIRDS (2D canvas) ══
-const birdCanvas = document.getElementById('bird-canvas');
-const bctx = birdCanvas.getContext('2d');
-birdCanvas.width = innerWidth;
-birdCanvas.height = innerHeight;
-window.addEventListener('resize',()=>{ birdCanvas.width=innerWidth; birdCanvas.height=innerHeight; });
-
-// Bird: simple ink-brushstroke "M" shape
-function drawBird(ctx, x, y, size, flap) {
-  ctx.save();
-  ctx.translate(x,y);
-  const wing = Math.sin(flap)*size*0.6;
+// ══════════════════════════════════
+//  BIRDS
+// ══════════════════════════════════
+const bc=document.getElementById('bird-canvas');
+const bctx=bc.getContext('2d');
+bc.width=innerWidth; bc.height=innerHeight;
+window.addEventListener('resize',()=>{bc.width=innerWidth;bc.height=innerHeight;});
+function drawBird(ctx,x,y,sz,fl){
+  ctx.save(); ctx.translate(x,y);
+  const w=Math.sin(fl)*sz*.65;
   ctx.beginPath();
-  ctx.moveTo(-size, wing*0.3);
-  ctx.quadraticCurveTo(-size*0.5, -wing, 0, 0);
-  ctx.quadraticCurveTo(size*0.5, -wing, size, wing*0.3);
-  ctx.strokeStyle = 'rgba(26,21,16,0.55)';
-  ctx.lineWidth = size*0.18;
-  ctx.lineCap = 'round';
-  ctx.stroke();
+  ctx.moveTo(-sz,w*.25);
+  ctx.quadraticCurveTo(-sz*.45,-w,0,0);
+  ctx.quadraticCurveTo(sz*.45,-w,sz,w*.25);
+  ctx.strokeStyle='rgba(26,21,16,.48)';
+  ctx.lineWidth=sz*.17; ctx.lineCap='round'; ctx.stroke();
   ctx.restore();
 }
-
-// Flock of birds
-const birds = Array.from({length:14}, (_,i) => ({
-  x: -80 - i*40 - Math.random()*60,
-  y: 80 + Math.random()*120 + (i%3)*30,
-  speed: 0.28 + Math.random()*0.18,
-  size: 5 + Math.random()*5,
-  flap: Math.random()*Math.PI*2,
-  flapSpeed: 0.04 + Math.random()*0.03,
-  drift: Math.random()*0.4-0.2,
+const birds=Array.from({length:16},(_,i)=>({
+  x:-100-i*45-Math.random()*80,
+  y:55+Math.random()*140+(i%4)*25,
+  spd:.22+Math.random()*.22,
+  sz:4.5+Math.random()*5,
+  fl:Math.random()*Math.PI*2,
+  flSpd:.036+Math.random()*.028,
+  drift:(Math.random()-.5)*.35
 }));
-
-function animateBirds(){
-  requestAnimationFrame(animateBirds);
-  bctx.clearRect(0,0,birdCanvas.width,birdCanvas.height);
+(function loopBirds(){
+  requestAnimationFrame(loopBirds);
+  bctx.clearRect(0,0,bc.width,bc.height);
   birds.forEach(b=>{
-    b.x += b.speed;
-    b.y += b.drift*0.2;
-    b.flap += b.flapSpeed;
-    if(b.x > birdCanvas.width+80) {
-      b.x = -80 - Math.random()*100;
-      b.y = 60 + Math.random()*180;
-    }
-    // Only show birds in upper portion (misty sky area)
-    if(b.y < birdCanvas.height*0.45) {
-      drawBird(bctx, b.x, b.y, b.size, b.flap);
-    }
+    b.x+=b.spd; b.y+=b.drift*.18; b.fl+=b.flSpd;
+    if(b.x>bc.width+100){b.x=-100-Math.random()*120;b.y=45+Math.random()*180;}
+    if(b.y<bc.height*.45) drawBird(bctx,b.x,b.y,b.sz,b.fl);
   });
-}
-animateBirds();
+})();
 
-// ══ SMALL INK PAINTING on about-canvas ══
-const pc = document.getElementById('painting-canvas');
+// ══════════════════════════════════
+//  MINI PAINTING (about)
+// ══════════════════════════════════
+const pc=document.getElementById('painting-canvas');
 if(pc){
-  const pctx = pc.getContext('2d');
-  // Draw a simple ink wash mini scene
-  function inkPainting(){
-    pctx.clearRect(0,0,280,300);
-    // Sky wash
-    const sky = pctx.createLinearGradient(0,0,0,200);
-    sky.addColorStop(0,'rgba(220,210,195,0)');
-    sky.addColorStop(1,'rgba(200,190,175,0.15)');
-    pctx.fillStyle=sky; pctx.fillRect(0,0,280,200);
-
-    // Mountains — layered
-    function mtn(pts, alpha, blur){
-      pctx.save();
-      pctx.filter=`blur(${blur}px)`;
-      pctx.beginPath();
-      pctx.moveTo(pts[0][0],pts[0][1]);
-      for(let i=1;i<pts.length;i++) pctx.lineTo(pts[i][0],pts[i][1]);
-      pctx.closePath();
-      pctx.fillStyle=`rgba(30,25,18,${alpha})`;
-      pctx.fill();
-      pctx.filter='none';
-      pctx.restore();
-    }
-    // Far mtn
-    mtn([[20,180],[70,95],[110,130],[160,80],[210,110],[260,170],[280,180]],0.08,4);
-    // Mid mtn
-    mtn([[0,180],[40,120],[80,90],[130,105],[180,75],[230,100],[280,175]],0.2,2);
-    // Near mtn
-    mtn([[0,200],[30,145],[70,110],[110,135],[140,100],[190,130],[230,115],[280,195],[280,300],[0,300]],0.45,0);
-
-    // Mist
-    const mist = pctx.createLinearGradient(0,150,0,190);
-    mist.addColorStop(0,'rgba(245,240,232,0)');
-    mist.addColorStop(0.5,'rgba(245,240,232,0.55)');
-    mist.addColorStop(1,'rgba(245,240,232,0)');
-    pctx.fillStyle=mist; pctx.fillRect(0,150,280,60);
-
-    // Water
-    pctx.fillStyle='rgba(180,190,200,0.1)';
-    pctx.fillRect(0,210,280,90);
-    // Ripple lines
-    for(let i=0;i<4;i++){
-      pctx.beginPath();
-      pctx.moveTo(10+i*5, 225+i*8);
-      pctx.bezierCurveTo(70,222+i*8, 140,230+i*8, 200,223+i*8);
-      pctx.strokeStyle=`rgba(80,75,65,0.07)`;
-      pctx.lineWidth=0.8;
-      pctx.stroke();
-    }
-
-    // Red sun
-    pctx.beginPath();
-    pctx.arc(148,55,22,0,Math.PI*2);
-    pctx.fillStyle='rgba(190,60,45,0.75)';
-    pctx.fill();
-
-    // Boat
+  const pctx=pc.getContext('2d');
+  const PW=260,PH=290;
+  function mtnP(pts,alpha,blur){
     pctx.save();
-    pctx.translate(90,218);
-    pctx.beginPath();
-    pctx.moveTo(-20,0); pctx.quadraticCurveTo(0,8,20,0);
-    pctx.strokeStyle='rgba(30,25,18,0.7)'; pctx.lineWidth=1.5; pctx.stroke();
-    // Pole
-    pctx.beginPath(); pctx.moveTo(5,0); pctx.lineTo(5,-22);
-    pctx.strokeStyle='rgba(30,25,18,0.6)'; pctx.lineWidth=1; pctx.stroke();
-    // Figure
-    pctx.beginPath(); pctx.arc(5,-24,3,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,0.65)'; pctx.fill();
-    pctx.restore();
-
-    // Trees (left)
-    function tree(x,y,h){
-      pctx.save();
-      pctx.translate(x,y);
-      pctx.beginPath();
-      pctx.moveTo(0,0); pctx.lineTo(0,-h);
-      pctx.strokeStyle='rgba(30,25,18,0.6)'; pctx.lineWidth=1.2; pctx.stroke();
-      // Branches
-      for(let i=0;i<5;i++){
-        const by=-h*(0.3+i*0.14);
-        const bx=(i%2===0?1:-1)*(8+Math.random()*6);
-        pctx.beginPath();
-        pctx.moveTo(0,by); pctx.lineTo(bx,by-5);
-        pctx.strokeStyle='rgba(30,25,18,0.35)'; pctx.lineWidth=0.8; pctx.stroke();
-      }
-      pctx.restore();
-    }
-    tree(38,207,35); tree(28,207,28); tree(50,210,20);
-
-    // Cow silhouette (right)
-    pctx.save();
-    pctx.translate(210,215);
-    pctx.beginPath();
-    pctx.ellipse(0,-5,16,8,0,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,0.55)'; pctx.fill();
-    // Legs
-    for(let i=-10;i<=10;i+=7){
-      pctx.beginPath(); pctx.moveTo(i,-1); pctx.lineTo(i+1,10);
-      pctx.strokeStyle='rgba(30,25,18,0.5)'; pctx.lineWidth=2; pctx.stroke();
-    }
-    // Head
-    pctx.beginPath(); pctx.ellipse(14,-7,6,5,0.4,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,0.55)'; pctx.fill();
+    if(blur)pctx.filter=`blur(${blur}px)`;
+    pctx.beginPath(); pctx.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++)pctx.lineTo(pts[i][0],pts[i][1]);
+    pctx.closePath(); pctx.fillStyle=`rgba(30,25,18,${alpha})`; pctx.fill();
+    pctx.filter='none'; pctx.restore();
+  }
+  function treeP(x,y,h){
+    pctx.save(); pctx.translate(x,y);
+    pctx.beginPath(); pctx.moveTo(0,0); pctx.lineTo(0,-h);
+    pctx.strokeStyle='rgba(30,25,18,.55)'; pctx.lineWidth=1.2; pctx.stroke();
+    for(let i=0;i<5;i++){const by=-h*(.3+i*.14),bx=(i%2?1:-1)*(7+Math.random()*4);pctx.beginPath();pctx.moveTo(0,by);pctx.lineTo(bx,by-5);pctx.strokeStyle='rgba(30,25,18,.28)';pctx.lineWidth=.8;pctx.stroke();}
     pctx.restore();
   }
-  inkPainting();
-
-  // Animate subtle mist drift
-  let paintT=0;
-  function animatePaint(){
-    requestAnimationFrame(animatePaint);
-    paintT+=0.012;
-    inkPainting();
-    // Mist drift overlay
-    pctx.save();
-    const mistDrift = pctx.createLinearGradient(0,155,0,185);
-    const mo = 0.08+Math.sin(paintT)*0.04;
-    mistDrift.addColorStop(0,'rgba(245,240,232,0)');
-    mistDrift.addColorStop(0.5,`rgba(245,240,232,${mo})`);
-    mistDrift.addColorStop(1,'rgba(245,240,232,0)');
-    pctx.fillStyle=mistDrift;
-    pctx.fillRect(0,155,280,50);
+  let pT=0;
+  (function paint(){
+    requestAnimationFrame(paint); pT+=.01;
+    pctx.clearRect(0,0,PW,PH);
+    const sky=pctx.createLinearGradient(0,0,0,PH*.65);
+    sky.addColorStop(0,'rgba(215,205,190,.07)'); sky.addColorStop(1,'rgba(200,190,175,0)');
+    pctx.fillStyle=sky; pctx.fillRect(0,0,PW,PH);
+    mtnP([[15,PH*.62],[55,PH*.33],[90,PH*.45],[145,PH*.28],[195,PH*.38],[245,PH*.6],[PW,PH*.62]],.07,4);
+    mtnP([[0,PH*.62],[35,PH*.42],[72,PH*.31],[122,PH*.36],[165,PH*.26],[215,PH*.35],[PW,PH*.6]],.18,2);
+    mtnP([[0,PH*.68],[25,PH*.5],[62,PH*.38],[105,PH*.46],[140,PH*.34],[185,PH*.45],[225,PH*.4],[PW,PH*.67],[PW,PH],[0,PH]],.42,0);
+    const mistA=.42+Math.sin(pT)*.08;
+    const mist=pctx.createLinearGradient(0,PH*.52,0,PH*.7);
+    mist.addColorStop(0,'rgba(244,239,228,0)'); mist.addColorStop(.5,`rgba(244,239,228,${mistA})`); mist.addColorStop(1,'rgba(244,239,228,0)');
+    pctx.fillStyle=mist; pctx.fillRect(0,PH*.52,PW,PH*.22);
+    pctx.fillStyle='rgba(175,188,198,.09)'; pctx.fillRect(0,PH*.71,PW,PH*.29);
+    for(let i=0;i<5;i++){const ry=PH*.75+i*9+Math.sin(pT+i)*.8;pctx.beginPath();pctx.moveTo(8+i*4,ry);pctx.bezierCurveTo(70,ry-1.5,150,ry+2,210,ry-.5);pctx.strokeStyle='rgba(80,75,65,.065)';pctx.lineWidth=.8;pctx.stroke();}
+    pctx.beginPath(); pctx.arc(PW*.55,PH*.19,19,0,Math.PI*2);
+    pctx.fillStyle='rgba(188,58,44,.72)'; pctx.fill();
+    const bx=PW*.32+Math.sin(pT*.4)*.8;
+    pctx.save(); pctx.translate(bx,PH*.74);
+    pctx.beginPath(); pctx.moveTo(-18,0); pctx.quadraticCurveTo(0,7,18,0);
+    pctx.strokeStyle='rgba(30,25,18,.68)'; pctx.lineWidth=1.5; pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(4,0); pctx.lineTo(4,-20);
+    pctx.strokeStyle='rgba(30,25,18,.55)'; pctx.lineWidth=1; pctx.stroke();
+    pctx.beginPath(); pctx.arc(4,-22,2.5,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,.6)'; pctx.fill();
     pctx.restore();
-  }
-  animatePaint();
+    treeP(35,PH*.71,32); treeP(25,PH*.72,25); treeP(47,PH*.73,18);
+    pctx.save(); pctx.translate(200,PH*.73);
+    pctx.beginPath(); pctx.ellipse(0,-4,14,7,0,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,.5)'; pctx.fill();
+    for(let i=-9;i<=9;i+=7){pctx.beginPath();pctx.moveTo(i,-1);pctx.lineTo(i+1,8);pctx.strokeStyle='rgba(30,25,18,.46)';pctx.lineWidth=1.8;pctx.stroke();}
+    pctx.beginPath(); pctx.ellipse(12,-6,5,4,.4,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,.5)'; pctx.fill();
+    pctx.restore();
+  })();
 }
 
-// ══ INK DRIPS (hero) ══
-const dripsContainer = document.getElementById('inkDrips');
-for(let i=0;i<8;i++){
-  const d=document.createElement('div');
-  d.className='ink-drip';
-  d.style.cssText=`
-    left:${5+i*13}%;
-    height:${60+Math.random()*120}px;
-    animation-duration:${6+Math.random()*8}s;
-    animation-delay:${Math.random()*10}s;
-  `;
-  dripsContainer.appendChild(d);
-}
+// ══════════════════════════════════
+//  INK DROP REVEAL
+// ══════════════════════════════════
+// Hero — staggered ink drops on load
+document.querySelectorAll('#hero .idr').forEach((el,i)=>{
+  el.style.setProperty('--dx','50%');
+  el.style.setProperty('--dy','20%');
+  setTimeout(()=>el.classList.add('revealed'), 150+i*260);
+});
 
-// ══ SCROLL REVEAL ══
-const items = document.querySelectorAll('.ink-wash-in');
-const obs = new IntersectionObserver(entries=>{
+// All other sections — trigger on scroll
+const obsTargets=document.querySelectorAll('section:not(#hero) .idr');
+const idrObs=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
-    if(e.isIntersecting){ e.target.classList.add('inked'); }
+    if(!e.isIntersecting) return;
+    const el=e.target;
+    el.style.setProperty('--dx',(30+Math.random()*40)+'%');
+    el.style.setProperty('--dy',(5+Math.random()*25)+'%');
+    setTimeout(()=>el.classList.add('revealed'), Math.random()*120);
+    idrObs.unobserve(el);
   });
-},{threshold:0.12});
-items.forEach(el=>obs.observe(el));
+},{threshold:.08});
+obsTargets.forEach(el=>idrObs.observe(el));
 </script>
 </body>
 </html>
