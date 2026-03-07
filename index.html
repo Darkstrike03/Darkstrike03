@@ -1,1134 +1,1469 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DarkStrike — Portfolio</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600;700&family=IM+Fell+English:ital@0;1&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DarkStrike — 墨 Ink Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=IM+Fell+DW+Pica:ital@0;1&family=Cinzel:wght@300;400;600&family=Noto+Serif:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-  :root {
-    --void: #03020a;
-    --abyss: #07050f;
-    --deep: #0d0a1a;
-    --crimson: #8b1a1a;
-    --blood: #c0392b;
-    --scarlet: #e74c3c;
-    --gold: #c9a84c;
-    --amber: #f0c040;
-    --pale-gold: #e8d5a3;
-    --fog: rgba(200,180,140,0.07);
-    --rune: #a07850;
-    --text: #d4c4a0;
-    --text-dim: #7a6a50;
-    --glow-gold: 0 0 20px rgba(201,168,76,0.4), 0 0 40px rgba(201,168,76,0.2);
-    --glow-crimson: 0 0 20px rgba(139,26,26,0.6), 0 0 40px rgba(139,26,26,0.3);
-  }
+:root {
+  --rice: #f5f0e8;
+  --aged: #ede5d5;
+  --fog: #ddd5c5;
+  --ink-0: #1a1510;
+  --ink-1: #2d2820;
+  --ink-2: #4a4035;
+  --ink-3: #6b5f52;
+  --ink-4: #9a8c7c;
+  --vermillion: #c0392b;
+  --vermillion-dim: #8b2020;
+  --seal-red: #a01010;
+  --mist: rgba(245,240,232,0.0);
+}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
 
-  html { scroll-behavior: smooth; }
+body {
+  background: var(--rice);
+  color: var(--ink-1);
+  font-family: 'Noto Serif', serif;
+  overflow-x: hidden;
+  cursor: none;
+}
 
-  body {
-    background: var(--void);
-    color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 16px;
-    overflow-x: hidden;
-    cursor: none;
-  }
+/* ── CURSOR ── */
+.cursor-dot {
+  position: fixed;
+  width: 7px; height: 7px;
+  background: var(--ink-0);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 10000;
+  transform: translate(-50%, -50%);
+  transition: transform 0.08s;
+  box-shadow: 0 0 4px rgba(26,21,16,0.35);
+}
+.cursor-trail-dot {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%, -50%);
+  background: var(--ink-0);
+  will-change: transform, opacity;
+}
+.ink-splat {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9990;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(26,21,16,0.18) 0%, transparent 70%);
+  transform: translate(-50%,-50%);
+  animation: splatFade 1.2s forwards;
+}
+@keyframes splatFade {
+  0%   { opacity:1; transform: translate(-50%,-50%) scale(0); }
+  30%  { opacity:0.7; transform: translate(-50%,-50%) scale(1); }
+  100% { opacity:0; transform: translate(-50%,-50%) scale(1.5); }
+}
 
-  /* CUSTOM CURSOR */
-  .cursor {
-    position: fixed;
-    width: 12px; height: 12px;
-    background: var(--gold);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    transition: transform 0.1s, background 0.2s;
-    box-shadow: var(--glow-gold);
-  }
-  .cursor-ring {
-    position: fixed;
-    width: 36px; height: 36px;
-    border: 1px solid rgba(201,168,76,0.4);
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9998;
-    transform: translate(-50%, -50%);
-    transition: all 0.15s ease;
-  }
+/* ── CANVAS ── */
+#bg-canvas {
+  position: fixed;
+  top:0; left:0; width:100%; height:100%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.85;
+}
 
-  /* CANVAS */
-  #bg-canvas {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 0;
-    pointer-events: none;
-  }
+/* ── INK WASH OVERLAY (SVG filter) ── */
+.ink-filter { display:none; }
 
-  /* NOISE OVERLAY */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1;
-    opacity: 0.4;
-  }
+/* ── PAPER TEXTURE ── */
+body::before {
+  content:'';
+  position: fixed;
+  inset:0;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23p)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: multiply;
+}
 
-  /* SECTIONS */
-  section { position: relative; z-index: 2; }
+/* ── PAPER VIGNETTE ── */
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(180,165,140,0.25) 100%);
+  pointer-events:none;
+  z-index:1;
+}
 
-  /* NAV */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    padding: 1.2rem 3rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: linear-gradient(to bottom, rgba(3,2,10,0.95), transparent);
-    border-bottom: 1px solid rgba(201,168,76,0.08);
-  }
-  .nav-logo {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 1.1rem;
-    color: var(--gold);
-    text-shadow: var(--glow-gold);
-    letter-spacing: 0.15em;
-  }
-  .nav-links {
-    display: flex;
-    gap: 2.5rem;
-    list-style: none;
-  }
-  .nav-links a {
-    font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    text-decoration: none;
-    transition: color 0.3s, text-shadow 0.3s;
-  }
-  .nav-links a:hover { color: var(--gold); text-shadow: var(--glow-gold); }
+section { position: relative; z-index: 2; }
 
-  /* DIVIDER RUNE */
-  .rune-divider {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin: 0 auto 4rem;
-    max-width: 500px;
-    justify-content: center;
-  }
-  .rune-divider::before, .rune-divider::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--rune), transparent);
-  }
-  .rune-divider span {
-    font-family: 'Cinzel Decorative', serif;
-    color: var(--gold);
-    font-size: 1.2rem;
-    text-shadow: var(--glow-gold);
-  }
+/* ── INK STROKE DIVIDERS (SVG) ── */
+.ink-stroke {
+  width: 100%;
+  overflow: visible;
+  display: block;
+  margin: 0;
+  line-height: 0;
+}
 
-  /* ====== HERO ====== */
-  #hero {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 6rem 2rem 4rem;
-    position: relative;
-  }
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top:0; left:0; right:0;
+  z-index:100;
+  padding: 1.4rem 4rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(to bottom, rgba(245,240,232,0.97), transparent);
+}
+.nav-seal {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.3rem;
+  color: var(--seal-red);
+  letter-spacing: 0.1em;
+  position: relative;
+}
+.nav-seal::after {
+  content:'';
+  position:absolute;
+  inset: -4px;
+  border: 1.5px solid var(--seal-red);
+  transform: rotate(3deg);
+  opacity: 0.6;
+}
+.nav-links { display:flex; gap:3rem; list-style:none; }
+.nav-links a {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: none;
+  transition: color 0.3s;
+  position: relative;
+}
+.nav-links a::after {
+  content:'';
+  position:absolute;
+  bottom:-3px; left:0;
+  width:0; height:1px;
+  background: var(--ink-1);
+  transition: width 0.4s;
+}
+.nav-links a:hover { color: var(--ink-0); }
+.nav-links a:hover::after { width:100%; }
 
-  .hero-eyebrow {
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.4em;
-    text-transform: uppercase;
-    color: var(--rune);
-    margin-bottom: 2rem;
-    opacity: 0;
-    animation: fadeUp 1s 0.3s forwards;
-  }
+/* ── HERO ── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 7rem 2rem 5rem;
+  position: relative;
+}
 
-  .hero-name {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: clamp(3.5rem, 10vw, 8rem);
-    font-weight: 900;
-    line-height: 1;
-    color: transparent;
-    background: linear-gradient(135deg, #c9a84c 0%, #f0c040 40%, #e8d5a3 60%, #c9a84c 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    text-shadow: none;
-    filter: drop-shadow(0 0 30px rgba(201,168,76,0.5));
-    opacity: 0;
-    animation: fadeUp 1s 0.5s forwards;
-    position: relative;
-  }
+/* Ink reveal animation */
+.ink-reveal {
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(20px);
+  animation: inkReveal 1.4s cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes inkReveal {
+  to { opacity:1; filter:blur(0); transform:translateY(0); }
+}
 
-  .hero-title {
-    font-family: 'IM Fell English', serif;
-    font-style: italic;
-    font-size: clamp(1rem, 2.5vw, 1.4rem);
-    color: var(--text-dim);
-    margin-top: 1.5rem;
-    letter-spacing: 0.05em;
-    opacity: 0;
-    animation: fadeUp 1s 0.7s forwards;
-  }
+.hero-kanji {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(5rem, 18vw, 14rem);
+  font-weight: 300;
+  color: var(--ink-0);
+  line-height: 1;
+  opacity: 0;
+  animation: inkBrush 2s cubic-bezier(0.16,1,0.3,1) 0.2s forwards;
+  position: relative;
+  letter-spacing: -0.05em;
+  text-shadow: 3px 4px 12px rgba(26,21,16,0.12);
+}
+@keyframes inkBrush {
+  0%   { opacity:0; filter:blur(20px) saturate(0); transform: scale(0.92); }
+  40%  { opacity:0.7; filter:blur(4px) saturate(0.5); }
+  100% { opacity:1; filter:blur(0) saturate(1); transform: scale(1); }
+}
 
-  .hero-subtitle {
-    font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.3em;
-    color: var(--crimson);
-    margin-top: 0.6rem;
-    text-transform: uppercase;
-    opacity: 0;
-    animation: fadeUp 1s 0.9s forwards;
-  }
+.hero-name-en {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(0.65rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 0.5rem;
+  opacity: 0;
+  animation: inkReveal 1s 1.2s forwards;
+}
 
-  .hero-cta {
-    margin-top: 3.5rem;
-    display: flex;
-    gap: 1.5rem;
-    opacity: 0;
-    animation: fadeUp 1s 1.1s forwards;
-  }
+.hero-tao {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: clamp(1rem, 2.2vw, 1.35rem);
+  color: var(--ink-2);
+  max-width: 580px;
+  line-height: 1.9;
+  margin-top: 3rem;
+  opacity: 0;
+  animation: inkReveal 1.4s 1.6s forwards;
+  position: relative;
+  padding: 0 2rem;
+}
+.hero-tao::before, .hero-tao::after {
+  font-family: 'Noto Serif SC', serif;
+  font-style: normal;
+  color: var(--vermillion);
+  font-size: 2rem;
+  position: absolute;
+  opacity: 0.4;
+}
+.hero-tao::before { content:'「'; left:0; top:-0.3em; }
+.hero-tao::after  { content:'」'; right:0; bottom:-0.5em; }
 
-  .btn-primary {
-    font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    padding: 0.9rem 2.5rem;
-    background: transparent;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    text-decoration: none;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s;
-    cursor: none;
-  }
-  .btn-primary::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: var(--gold);
-    transform: translateX(-100%);
-    transition: transform 0.4s ease;
-    z-index: -1;
-  }
-  .btn-primary:hover { color: var(--void); text-shadow: none; }
-  .btn-primary:hover::before { transform: translateX(0); }
+.hero-tao-src {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-style: normal;
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  color: var(--ink-4);
+  margin-top: 1rem;
+  text-align: right;
+}
 
-  .btn-secondary {
-    font-family: 'Cinzel', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    padding: 0.9rem 2.5rem;
-    background: transparent;
-    border: 1px solid rgba(139,26,26,0.6);
-    color: var(--blood);
-    text-decoration: none;
-    transition: all 0.4s;
-    cursor: none;
-  }
-  .btn-secondary:hover {
-    border-color: var(--scarlet);
-    color: var(--scarlet);
-    box-shadow: var(--glow-crimson);
-  }
+.hero-sub {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.4em;
+  color: var(--ink-4);
+  margin-top: 3rem;
+  text-transform: uppercase;
+  opacity: 0;
+  animation: inkReveal 1s 2.2s forwards;
+}
 
-  /* Scroll indicator */
-  .scroll-hint {
-    position: absolute;
-    bottom: 2.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    opacity: 0;
-    animation: fadeIn 1s 2s forwards;
-  }
-  .scroll-hint span {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.3em;
-    color: var(--text-dim);
-  }
-  .scroll-line {
-    width: 1px;
-    height: 50px;
-    background: linear-gradient(to bottom, var(--gold), transparent);
-    animation: scrollPulse 2s infinite;
-  }
+.hero-cta-row {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2.5rem;
+  opacity: 0;
+  animation: inkReveal 1s 2.5s forwards;
+}
+.btn-ink {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.8rem 2.2rem;
+  background: var(--ink-0);
+  color: var(--rice);
+  text-decoration: none;
+  border: none;
+  cursor: none;
+  transition: background 0.3s, transform 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.btn-ink::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: var(--vermillion);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+  z-index:-1;
+}
+.btn-ink:hover { background: var(--vermillion); transform: translateY(-2px); }
 
-  /* FLOATING RUNES */
-  .floating-runes {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .rune-char {
-    position: absolute;
-    font-family: 'Cinzel Decorative', serif;
-    color: rgba(201,168,76,0.06);
-    font-size: 6rem;
-    animation: floatRune linear infinite;
-    user-select: none;
-  }
+.btn-ink-outline {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.8rem 2.2rem;
+  background: transparent;
+  color: var(--ink-1);
+  text-decoration: none;
+  border: 1px solid var(--ink-3);
+  cursor: none;
+  transition: all 0.3s;
+}
+.btn-ink-outline:hover { border-color: var(--ink-0); color: var(--ink-0); }
 
-  /* ====== ABOUT ====== */
-  #about {
-    padding: 8rem 2rem;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-  .section-header {
-    text-align: center;
-    margin-bottom: 5rem;
-  }
-  .section-label {
-    font-family: 'Cinzel', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.5em;
-    text-transform: uppercase;
-    color: var(--crimson);
-    display: block;
-    margin-bottom: 1rem;
-  }
-  .section-title {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: clamp(1.8rem, 4vw, 3rem);
-    color: var(--gold);
-    text-shadow: var(--glow-gold);
-    line-height: 1.2;
-  }
+/* Scroll indicator */
+.scroll-brush {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  opacity: 0;
+  animation: inkReveal 1s 3s forwards;
+}
+.scroll-brush span {
+  font-family: 'Cinzel', serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.4em;
+  color: var(--ink-4);
+  text-transform: uppercase;
+}
+.scroll-brush-line {
+  width: 1px; height: 55px;
+  background: linear-gradient(to bottom, var(--ink-2), transparent);
+  animation: brushDrop 2s ease-in-out infinite;
+}
+@keyframes brushDrop {
+  0%,100% { transform: scaleY(0.7); opacity:0.4; }
+  50% { transform: scaleY(1); opacity:1; }
+}
 
-  .about-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 5rem;
-    align-items: center;
-  }
-  .about-text p {
-    font-family: 'IM Fell English', serif;
-    font-size: 1.1rem;
-    line-height: 1.9;
-    color: var(--text);
-    margin-bottom: 1.5rem;
-  }
-  .about-text p em { color: var(--gold); font-style: italic; }
+/* ── SECTION COMMON ── */
+.scroll-chapter {
+  padding: 9rem 2rem;
+  position: relative;
+}
+.chapter-inner { max-width: 1100px; margin: 0 auto; }
 
-  .about-sigil {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 380px;
-  }
-  .sigil-ring {
-    position: absolute;
-    border-radius: 50%;
-    border: 1px solid;
-    animation: rotateSigil linear infinite;
-  }
-  .sigil-ring:nth-child(1) {
-    width: 280px; height: 280px;
-    border-color: rgba(201,168,76,0.25);
-    animation-duration: 30s;
-  }
-  .sigil-ring:nth-child(2) {
-    width: 220px; height: 220px;
-    border-color: rgba(139,26,26,0.3);
-    animation-duration: 20s;
-    animation-direction: reverse;
-  }
-  .sigil-ring:nth-child(3) {
-    width: 160px; height: 160px;
-    border-color: rgba(201,168,76,0.2);
-    animation-duration: 15s;
-  }
-  .sigil-center {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 3.5rem;
-    color: var(--gold);
-    text-shadow: var(--glow-gold);
-    z-index: 2;
-    animation: pulse 3s ease-in-out infinite;
-  }
-  .sigil-dot {
-    position: absolute;
-    width: 6px; height: 6px;
-    background: var(--gold);
-    border-radius: 50%;
-    box-shadow: var(--glow-gold);
-  }
+.chapter-label {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-bottom: 4rem;
+}
+.chapter-label-cn {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.75rem;
+  color: var(--vermillion);
+  letter-spacing: 0.3em;
+  writing-mode: vertical-rl;
+  line-height: 1;
+}
+.chapter-label-line {
+  flex:1;
+  height:1px;
+  background: linear-gradient(to right, var(--ink-3), transparent);
+  max-width: 120px;
+}
+.chapter-title {
+  font-family: 'IM Fell DW Pica', serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  color: var(--ink-0);
+  line-height: 1.15;
+  font-style: italic;
+}
+.chapter-title em {
+  font-style: normal;
+  color: var(--vermillion);
+}
 
-  /* ====== SKILLS ====== */
-  #skills {
-    padding: 8rem 2rem;
-    background: linear-gradient(to bottom, transparent, rgba(139,26,26,0.03), transparent);
-  }
-  .skills-inner { max-width: 1100px; margin: 0 auto; }
+/* ── ABOUT ── */
+#about { background: transparent; }
+.about-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 6rem;
+  align-items: start;
+}
+.about-kanji-column {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+}
+.vertical-kanji {
+  font-family: 'Noto Serif SC', serif;
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 300;
+  color: var(--ink-1);
+  writing-mode: vertical-rl;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
+  opacity: 0.12;
+  position: absolute;
+  right: 0; top: 0;
+  pointer-events: none;
+  user-select: none;
+}
+.seal-stamp {
+  width: 80px; height: 80px;
+  border: 2px solid var(--seal-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-6deg);
+  position: relative;
+}
+.seal-stamp::before {
+  content:'';
+  position:absolute;
+  inset:3px;
+  border:1px solid var(--seal-red);
+  opacity:0.4;
+}
+.seal-stamp span {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.6rem;
+  color: var(--seal-red);
+  line-height:1;
+}
 
-  .skills-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 1.5rem;
-  }
+.about-ink-painting {
+  position: relative;
+  height: 320px;
+}
 
-  .skill-category {
-    background: rgba(13,10,26,0.8);
-    border: 1px solid rgba(201,168,76,0.12);
-    padding: 2rem;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.3s, transform 0.3s;
-  }
-  .skill-category::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(to right, transparent, var(--crimson), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .skill-category:hover { border-color: rgba(201,168,76,0.3); transform: translateY(-4px); }
-  .skill-category:hover::before { opacity: 1; }
+.about-text-col p {
+  font-family: 'IM Fell DW Pica', serif;
+  font-size: 1.05rem;
+  line-height: 2;
+  color: var(--ink-2);
+  margin-bottom: 1.8rem;
+}
+.about-text-col p em { color: var(--ink-0); font-style: normal; font-weight: 700; }
+.about-text-col p i { color: var(--vermillion); }
 
-  .skill-cat-title {
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    text-transform: uppercase;
-    color: var(--crimson);
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .skill-cat-title::before { content: '⬡'; font-size: 0.6rem; color: var(--gold); }
+.tao-pull {
+  margin: 3rem 0;
+  padding: 2rem 2.5rem;
+  border-left: 2px solid var(--ink-0);
+  background: rgba(26,21,16,0.03);
+  position: relative;
+}
+.tao-pull p {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--ink-1);
+  margin: 0;
+}
+.tao-pull::before {
+  content: '道';
+  position: absolute;
+  right: 1.5rem; top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Noto Serif SC', serif;
+  font-size: 4rem;
+  color: var(--ink-0);
+  opacity: 0.05;
+  user-select: none;
+}
 
-  .skill-pills {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-  .pill {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    padding: 0.3rem 0.8rem;
-    background: rgba(201,168,76,0.06);
-    border: 1px solid rgba(201,168,76,0.15);
-    color: var(--text);
-    transition: all 0.3s;
-  }
-  .pill:hover {
-    background: rgba(201,168,76,0.12);
-    border-color: var(--gold);
-    color: var(--gold);
-  }
+/* ── SKILLS ── */
+#skills {
+  background: rgba(26,21,16,0.03);
+}
+.skills-scroll {
+  display: flex;
+  gap: 2rem;
+  flex-wrap: wrap;
+}
+.skill-scroll-item {
+  background: rgba(245,240,232,0.8);
+  border: 1px solid rgba(26,21,16,0.12);
+  padding: 2rem 2rem;
+  min-width: 220px;
+  position: relative;
+  flex: 1;
+  transition: transform 0.4s, box-shadow 0.4s;
+}
+.skill-scroll-item::before {
+  content: '';
+  position: absolute;
+  top:0; left:0; right:0;
+  height: 2px;
+  background: var(--ink-0);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s ease;
+}
+.skill-scroll-item:hover { transform: translateY(-5px); box-shadow: 0 12px 40px rgba(26,21,16,0.1); }
+.skill-scroll-item:hover::before { transform: scaleX(1); }
 
-  /* ====== PROJECTS ====== */
-  #projects {
-    padding: 8rem 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
+.skill-scroll-title {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--vermillion);
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.skill-pills { display:flex; flex-wrap:wrap; gap:0.4rem; }
+.skill-pill {
+  font-family: 'Noto Serif', serif;
+  font-size: 0.8rem;
+  padding: 0.25rem 0.7rem;
+  background: transparent;
+  border: 1px solid rgba(26,21,16,0.18);
+  color: var(--ink-2);
+  transition: all 0.3s;
+}
+.skill-pill:hover { background: var(--ink-0); color: var(--rice); border-color: var(--ink-0); }
 
-  .projects-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-    gap: 2rem;
-  }
+/* ── PROJECTS ── */
+#projects { background: transparent; }
 
-  .project-card {
-    background: rgba(7,5,15,0.9);
-    border: 1px solid rgba(201,168,76,0.1);
-    padding: 2.5rem;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.4s;
-    cursor: none;
-  }
-  .project-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(139,26,26,0.05), transparent);
-    opacity: 0;
-    transition: opacity 0.4s;
-  }
-  .project-card:hover {
-    border-color: rgba(201,168,76,0.35);
-    transform: translateY(-6px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(139,26,26,0.1);
-  }
-  .project-card:hover::after { opacity: 1; }
+.projects-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
 
-  .project-card.featured {
-    grid-column: span 2;
-    border-color: rgba(139,26,26,0.3);
-  }
-  .project-card.featured:hover { border-color: rgba(201,168,76,0.4); }
+.project-chapter {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0 3rem;
+  padding: 4rem 0;
+  border-bottom: 1px solid rgba(26,21,16,0.1);
+  transition: background 0.3s;
+  position: relative;
+}
+.project-chapter:last-child { border-bottom: none; }
+.project-chapter:hover { background: rgba(26,21,16,0.02); }
 
-  .project-num {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.3em;
-    color: var(--crimson);
-    opacity: 0.7;
-    margin-bottom: 1rem;
-  }
-  .project-name {
-    font-family: 'Cinzel', serif;
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--gold);
-    margin-bottom: 0.8rem;
-    line-height: 1.3;
-  }
-  .project-tag {
-    display: inline-block;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    padding: 0.2rem 0.6rem;
-    background: rgba(139,26,26,0.2);
-    border: 1px solid rgba(139,26,26,0.4);
-    color: var(--blood);
-    margin-bottom: 1.2rem;
-  }
-  .project-desc {
-    font-family: 'IM Fell English', serif;
-    font-size: 0.95rem;
-    line-height: 1.8;
-    color: var(--text-dim);
-    margin-bottom: 2rem;
-  }
-  .project-links {
-    display: flex;
-    gap: 1rem;
-    margin-top: auto;
-  }
-  .project-link {
-    font-family: 'Cinzel', serif;
-    font-size: 0.65rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--gold);
-    text-decoration: none;
-    border-bottom: 1px solid rgba(201,168,76,0.3);
-    padding-bottom: 2px;
-    transition: border-color 0.3s, color 0.3s;
-  }
-  .project-link:hover { border-color: var(--gold); color: var(--amber); }
+.project-num-cn {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 2.5rem;
+  font-weight: 300;
+  color: var(--ink-0);
+  opacity: 0.15;
+  writing-mode: vertical-rl;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  user-select: none;
+  align-self: start;
+  padding-top: 0.2rem;
+}
 
-  .project-wip {
-    font-family: 'Cinzel', serif;
-    font-size: 0.6rem;
-    letter-spacing: 0.25em;
-    color: var(--rune);
-    padding: 0.2rem 0.8rem;
-    border: 1px solid rgba(160,120,80,0.3);
-    display: inline-block;
-  }
+.project-body { display:flex; flex-direction:column; gap:0.8rem; }
 
-  .project-corner {
-    position: absolute;
-    top: 0; right: 0;
-    width: 50px; height: 50px;
-    border-left: 1px solid rgba(201,168,76,0.15);
-    border-bottom: 1px solid rgba(201,168,76,0.15);
-    pointer-events: none;
-  }
+.project-tag-row { display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap; }
+.project-tag {
+  font-family: 'Cinzel', serif;
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.7rem;
+  border: 1px solid rgba(26,21,16,0.2);
+  color: var(--ink-3);
+}
+.project-tag.wip { border-color: var(--vermillion-dim); color: var(--vermillion-dim); }
 
-  /* GRAVEYARD */
-  .graveyard {
-    margin-top: 5rem;
-    padding: 2.5rem;
-    border: 1px solid rgba(139,26,26,0.2);
-    background: rgba(3,2,10,0.6);
-    position: relative;
-  }
-  .graveyard-title {
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.3em;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-  }
-  .graveyard-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(139,26,26,0.2);
-  }
-  .fallen-projects {
-    display: flex;
-    gap: 2rem;
-    flex-wrap: wrap;
-  }
-  .fallen {
-    font-family: 'IM Fell English', serif;
-    font-style: italic;
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    opacity: 0.5;
-    text-decoration: line-through;
-    text-decoration-color: rgba(139,26,26,0.4);
-  }
+.project-title {
+  font-family: 'IM Fell DW Pica', serif;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 400;
+  color: var(--ink-0);
+  line-height: 1.2;
+}
 
-  /* ====== FOOTER ====== */
-  footer {
-    padding: 5rem 2rem;
-    text-align: center;
-    border-top: 1px solid rgba(201,168,76,0.08);
-    position: relative;
-    z-index: 2;
-  }
-  .footer-name {
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 2rem;
-    color: var(--gold);
-    text-shadow: var(--glow-gold);
-    margin-bottom: 1.5rem;
-  }
-  .footer-quote {
-    font-family: 'IM Fell English', serif;
-    font-style: italic;
-    font-size: 0.95rem;
-    color: var(--text-dim);
-    margin-bottom: 2.5rem;
-    max-width: 500px;
-    margin-left: auto;
-    margin-right: auto;
-  }
-  .footer-links {
-    display: flex;
-    gap: 2rem;
-    justify-content: center;
-    margin-bottom: 3rem;
-  }
-  .footer-link {
-    font-family: 'Cinzel', serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    text-decoration: none;
-    transition: color 0.3s;
-  }
-  .footer-link:hover { color: var(--gold); }
-  .footer-copy {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.15em;
-    color: var(--text-dim);
-    opacity: 0.4;
-  }
+.project-desc {
+  font-family: 'Noto Serif', serif;
+  font-size: 0.95rem;
+  line-height: 1.9;
+  color: var(--ink-3);
+  max-width: 680px;
+}
 
-  /* ANIMATIONS */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-  @keyframes scrollPulse {
-    0%, 100% { opacity: 0.3; transform: scaleY(1); }
-    50% { opacity: 1; transform: scaleY(1.1); }
-  }
-  @keyframes rotateSigil {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(201,168,76,0.5)); }
-    50% { transform: scale(1.05); filter: drop-shadow(0 0 25px rgba(201,168,76,0.8)); }
-  }
-  @keyframes floatRune {
-    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 0.5; }
-    100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-  }
+.project-link-row { display:flex; gap:1.5rem; align-items:center; margin-top:0.5rem; }
+.project-link {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink-3);
+  padding-bottom: 2px;
+  transition: border-color 0.3s, color 0.3s;
+}
+.project-link:hover { color: var(--vermillion); border-color: var(--vermillion); }
 
-  /* SCROLL REVEAL */
-  .reveal {
-    opacity: 0;
-    transform: translateY(40px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
-  }
-  .reveal.visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* Graveyard */
+.graveyard-ink {
+  margin-top: 4rem;
+  padding: 3rem;
+  background: rgba(26,21,16,0.04);
+  border: 1px solid rgba(26,21,16,0.08);
+  text-align: center;
+  position: relative;
+}
+.graveyard-ink::before {
+  content: '逝';
+  font-family: 'Noto Serif SC', serif;
+  font-size: 8rem;
+  font-weight: 300;
+  color: var(--ink-0);
+  opacity: 0.03;
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  user-select: none;
+}
+.graveyard-title-ink {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--ink-4);
+  letter-spacing: 0.15em;
+  margin-bottom: 1.5rem;
+}
+.fallen-row { display:flex; gap:2.5rem; justify-content:center; flex-wrap:wrap; }
+.fallen-ink {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--ink-4);
+  opacity: 0.5;
+  text-decoration: line-through;
+  text-decoration-style: solid;
+  text-decoration-color: rgba(192,57,43,0.4);
+}
 
-  /* PARTICLE GLOWS */
-  .particle-container {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 1;
-    overflow: hidden;
-  }
-  .particle {
-    position: absolute;
-    width: 2px; height: 2px;
-    background: var(--gold);
-    border-radius: 50%;
-    opacity: 0;
-    animation: particleDrift linear infinite;
-  }
+/* ── CLOSING TAO SECTION ── */
+#tao-close {
+  padding: 10rem 2rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.tao-mountain-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.tao-mountain-bg span {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 22rem;
+  font-weight: 300;
+  color: var(--ink-0);
+  line-height: 1;
+  user-select: none;
+  letter-spacing: -0.1em;
+}
+.tao-final-quote {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: clamp(1.2rem, 3vw, 1.9rem);
+  color: var(--ink-1);
+  max-width: 680px;
+  margin: 0 auto 1.5rem;
+  line-height: 1.8;
+}
+.tao-attribution {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.35em;
+  color: var(--vermillion);
+  text-transform: uppercase;
+}
 
-  @keyframes particleDrift {
-    0% { opacity: 0; transform: translateY(0) scale(0); }
-    20% { opacity: 0.6; transform: translateY(-30px) scale(1); }
-    100% { opacity: 0; transform: translateY(-120px) scale(0.5); }
-  }
+/* ── FOOTER ── */
+footer {
+  padding: 4rem 2rem;
+  border-top: 1px solid rgba(26,21,16,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto;
+  z-index: 2;
+  position: relative;
+}
+.footer-seal {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+.footer-seal-box {
+  width: 55px; height: 55px;
+  border: 2px solid var(--seal-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(-4deg);
+  position: relative;
+}
+.footer-seal-box span {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 1.2rem;
+  color: var(--seal-red);
+}
+.footer-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--ink-4);
+  text-transform: uppercase;
+  margin-top: 0.5rem;
+}
+.footer-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1rem;
+}
+.footer-links-row { display:flex; gap:2rem; }
+.footer-link {
+  font-family: 'Cinzel', serif;
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-decoration: none;
+  transition: color 0.3s;
+}
+.footer-link:hover { color: var(--vermillion); }
+.footer-copy {
+  font-family: 'IM Fell DW Pica', serif;
+  font-style: italic;
+  font-size: 0.8rem;
+  color: var(--ink-4);
+  opacity: 0.6;
+}
 
-  /* RESPONSIVE */
-  @media (max-width: 768px) {
-    nav { padding: 1rem 1.5rem; }
-    .nav-links { display: none; }
-    .about-grid { grid-template-columns: 1fr; }
-    .about-sigil { display: none; }
-    .project-card.featured { grid-column: span 1; }
-    .projects-grid { grid-template-columns: 1fr; }
-  }
+/* ── SCROLL REVEAL ── */
+.ink-wash-in {
+  opacity: 0;
+  filter: blur(6px);
+  transform: translateY(30px);
+  transition: opacity 1s ease, filter 1.2s ease, transform 1s ease;
+}
+.ink-wash-in.inked {
+  opacity: 1; filter: blur(0); transform: translateY(0);
+}
+.ink-wash-in:nth-child(2) { transition-delay: 0.1s; }
+.ink-wash-in:nth-child(3) { transition-delay: 0.2s; }
+.ink-wash-in:nth-child(4) { transition-delay: 0.3s; }
+
+/* ── INK DRIP (hero ambience) ── */
+.ink-drip {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--ink-0), transparent);
+  opacity: 0;
+  animation: dripDown linear infinite;
+  pointer-events: none;
+}
+@keyframes dripDown {
+  0%   { opacity:0; transform: scaleY(0); transform-origin: top; }
+  15%  { opacity: 0.08; }
+  85%  { opacity: 0.04; }
+  100% { opacity:0; transform: scaleY(1); transform-origin: top; }
+}
+
+/* ── BIRDS (SVG canvas animated) ── */
+#bird-canvas {
+  position: fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  nav { padding: 1rem 1.5rem; }
+  .nav-links { display: none; }
+  .about-layout { grid-template-columns: 1fr; }
+  .about-kanji-column { display: none; }
+  .project-chapter { grid-template-columns: 1fr; }
+  .project-num-cn { display: none; }
+  footer { flex-direction: column; gap: 2rem; align-items: center; }
+}
 </style>
 </head>
 <body>
 
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
+<!-- Custom cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div id="trailContainer"></div>
 
+<!-- Three.js mountain/mist background -->
 <canvas id="bg-canvas"></canvas>
 
-<div class="particle-container" id="particles"></div>
+<!-- Birds canvas -->
+<canvas id="bird-canvas"></canvas>
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">DarkStrike</div>
+  <div class="nav-seal"><span>暗</span></div>
   <ul class="nav-links">
-    <li><a href="#about">Chronicle</a></li>
-    <li><a href="#skills">Abilities</a></li>
-    <li><a href="#projects">Realms</a></li>
+    <li><a href="#about">Scroll I</a></li>
+    <li><a href="#skills">Scroll II</a></li>
+    <li><a href="#projects">Scroll III</a></li>
     <li><a href="https://github.com/Darkstrike03" target="_blank">Codex</a></li>
   </ul>
 </nav>
 
-<!-- HERO -->
+<!-- ══ HERO ══ -->
 <section id="hero">
-  <div class="floating-runes" id="floatingRunes"></div>
 
-  <p class="hero-eyebrow">— Sequence Unknown · Pathway: Full Stack —</p>
-  <h1 class="hero-name">DarkStrike</h1>
-  <p class="hero-title">Builder of Digital Realms &amp; Arcane Systems</p>
-  <p class="hero-subtitle">Full Stack · Designer · Creator</p>
+  <!-- Ink drips -->
+  <div id="inkDrips"></div>
 
-  <div class="hero-cta">
-    <a href="#projects" class="btn-primary">View Realms</a>
-    <a href="https://github.com/Darkstrike03" target="_blank" class="btn-secondary">GitHub Codex</a>
+  <h1 class="hero-kanji">暗撃</h1>
+  <p class="hero-name-en">DarkStrike · Builder of Digital Worlds</p>
+
+  <blockquote class="hero-tao" style="animation-delay:1.6s">
+    "The way that can be built is not true;<br>the world that can be constructed is not true."
+    <span class="hero-tao-src">— Tao Te Ching · 道德經</span>
+  </blockquote>
+
+  <p class="hero-sub">Full Stack · Design · Mobile · AI</p>
+
+  <div class="hero-cta-row">
+    <a href="#projects" class="btn-ink">Read the Scrolls</a>
+    <a href="https://github.com/Darkstrike03" target="_blank" class="btn-ink-outline">GitHub</a>
   </div>
 
-  <div class="scroll-hint">
-    <span>Descend</span>
-    <div class="scroll-line"></div>
-  </div>
-</section>
-
-<!-- ABOUT -->
-<section id="about">
-  <div class="section-header reveal">
-    <span class="section-label">Chronicle I</span>
-    <h2 class="section-title">The Practitioner</h2>
-  </div>
-
-  <div class="about-grid">
-    <div class="about-text reveal">
-      <p>
-        A <em>full-stack developer</em> who forges interfaces from void and logic — wielding both the brush of design and the blade of code. Front-end, back-end, mobile, and desktop: no realm is beyond reach.
-      </p>
-      <p>
-        Inspired by the <em>mystery and depth</em> of webnovels — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I approach every project as a world to build, complete with its own rules, aesthetics, and hidden systems.
-      </p>
-      <p>
-        Currently constructing <em>Aetheria</em>, an AI model trained from scratch — a digital grimoire assembled piece by piece, like climbing a forbidden pathway.
-      </p>
-    </div>
-
-    <div class="about-sigil reveal">
-      <div class="sigil-ring"></div>
-      <div class="sigil-ring"></div>
-      <div class="sigil-ring"></div>
-      <div class="sigil-center">⬡</div>
-    </div>
+  <div class="scroll-brush">
+    <span>Unroll</span>
+    <div class="scroll-brush-line"></div>
   </div>
 </section>
 
-<!-- SKILLS -->
-<section id="skills">
-  <div class="skills-inner">
-    <div class="section-header reveal">
-      <span class="section-label">Chronicle II</span>
-      <h2 class="section-title">Abilities &amp; Affinities</h2>
+<!-- ══ ABOUT ══ -->
+<section id="about" class="scroll-chapter">
+  <div class="chapter-inner">
+    <div class="chapter-label ink-wash-in">
+      <span class="chapter-label-cn">一</span>
+      <div class="chapter-label-line"></div>
+      <h2 class="chapter-title">The <em>Practitioner</em></h2>
     </div>
 
-    <div class="skills-grid">
-      <div class="skill-category reveal">
-        <div class="skill-cat-title">Incantation (Frontend)</div>
-        <div class="skill-pills">
-          <span class="pill">HTML</span>
-          <span class="pill">CSS</span>
-          <span class="pill">Vanilla CSS</span>
-          <span class="pill">Tailwind CSS</span>
-          <span class="pill">React</span>
-          <span class="pill">Next.js</span>
-        </div>
+    <div class="about-layout">
+      <div class="about-kanji-column ink-wash-in">
+        <div class="vertical-kanji">開発者設計者創造者</div>
+        <div class="seal-stamp"><span>匠</span></div>
+        <!-- Ink painting rendered on canvas below -->
+        <canvas id="painting-canvas" width="280" height="300" style="opacity:0.75; margin-top:2rem;"></canvas>
       </div>
-      <div class="skill-category reveal">
-        <div class="skill-cat-title">Forging (Backend)</div>
-        <div class="skill-pills">
-          <span class="pill">Node.js</span>
-          <span class="pill">Express</span>
-          <span class="pill">Python</span>
-          <span class="pill">Java</span>
-          <span class="pill">MongoDB</span>
-          <span class="pill">Oracle</span>
+
+      <div class="about-text-col">
+        <p class="ink-wash-in">
+          A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.
+        </p>
+        <p class="ink-wash-in">
+          Drawn to the deep wells of <i>webnovels</i> — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I build platforms as one builds a world: with hidden systems, layered lore, and spaces that breathe.
+        </p>
+        <div class="tao-pull ink-wash-in">
+          <p>"The way that can be built is not true;<br>the world that can be constructed is not true."</p>
         </div>
-      </div>
-      <div class="skill-category reveal">
-        <div class="skill-cat-title">Cross-realm (Mobile)</div>
-        <div class="skill-pills">
-          <span class="pill">Flutter</span>
-          <span class="pill">Dart</span>
-        </div>
-      </div>
-      <div class="skill-category reveal">
-        <div class="skill-cat-title">Sigils (Design &amp; Tools)</div>
-        <div class="skill-pills">
-          <span class="pill">Figma</span>
-          <span class="pill">Git</span>
-          <span class="pill">VS Code</span>
-          <span class="pill">Vercel</span>
-          <span class="pill">Netlify</span>
-          <span class="pill">GDScript</span>
-        </div>
+        <p class="ink-wash-in">
+          This is not contradiction — it is <em>compass</em>. Build anyway. Know it is incomplete. Then build deeper.
+        </p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- PROJECTS -->
-<section id="projects">
-  <div class="section-header reveal">
-    <span class="section-label">Chronicle III</span>
-    <h2 class="section-title">Constructed Realms</h2>
-  </div>
-
-  <div class="projects-grid">
-
-    <!-- OtakusLibrary - Featured -->
-    <div class="project-card featured reveal">
-      <div class="project-corner"></div>
-      <div class="project-num">Realm · 001</div>
-      <div class="project-name">Otaku's Library</div>
-      <span class="project-tag">Platform · Full Stack</span>
-      <p class="project-desc">
-        A vast archive for tracking and discovering Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, and Webnovels. A living library for the devoted reader and watcher — all formats, one sanctuary.
-      </p>
-      <div class="project-links">
-        <a href="https://www.otakuslibrary.com/" target="_blank" class="project-link">Visit Realm →</a>
-      </div>
+<!-- ══ SKILLS ══ -->
+<section id="skills" class="scroll-chapter">
+  <div class="chapter-inner">
+    <div class="chapter-label ink-wash-in">
+      <span class="chapter-label-cn">二</span>
+      <div class="chapter-label-line"></div>
+      <h2 class="chapter-title">The <em>Arts</em> Mastered</h2>
     </div>
-
-    <!-- Gensaku -->
-    <div class="project-card reveal">
-      <div class="project-corner"></div>
-      <div class="project-num">Realm · 002</div>
-      <div class="project-name">Gensaku</div>
-      <span class="project-tag">App · Flutter · Dart</span>
-      <p class="project-desc">
-        An ecosystem for authors to forge their novel worlds. Web app, Android app, and Windows app — all three planes, one creation engine.
-      </p>
-      <div class="project-links">
-        <a href="https://gensaku.vercel.app/" target="_blank" class="project-link">Visit Realm →</a>
+    <div class="skills-scroll">
+      <div class="skill-scroll-item ink-wash-in">
+        <div class="skill-scroll-title">筆 · Brushwork (Frontend)</div>
+        <div class="skill-pills">
+          <span class="skill-pill">HTML</span><span class="skill-pill">CSS</span>
+          <span class="skill-pill">Tailwind</span><span class="skill-pill">React</span>
+          <span class="skill-pill">Next.js</span><span class="skill-pill">Figma</span>
+        </div>
       </div>
-    </div>
-
-    <!-- Localore -->
-    <div class="project-card reveal">
-      <div class="project-corner"></div>
-      <div class="project-num">Realm · 003</div>
-      <div class="project-name">Localore</div>
-      <span class="project-tag">Web · Gamified</span>
-      <p class="project-desc">
-        Discover folklore and mythological creatures from every culture, with a gamified twist. Knowledge as adventure — mythology made interactive.
-      </p>
-      <div class="project-links">
-        <a href="https://localore.vercel.app/" target="_blank" class="project-link">Visit Realm →</a>
+      <div class="skill-scroll-item ink-wash-in">
+        <div class="skill-scroll-title">鉄 · Ironwork (Backend)</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Node.js</span><span class="skill-pill">Express</span>
+          <span class="skill-pill">Python</span><span class="skill-pill">Java</span>
+          <span class="skill-pill">MongoDB</span><span class="skill-pill">Oracle</span>
+        </div>
       </div>
-    </div>
-
-    <!-- Rocket Transfers -->
-    <div class="project-card reveal">
-      <div class="project-corner"></div>
-      <div class="project-num">Realm · 004</div>
-      <div class="project-name">Rocket Transfers</div>
-      <span class="project-tag">Web · Utility</span>
-      <p class="project-desc">
-        Instant file transfers — no friction, no accounts, no delay. Send files across the void at the speed of thought.
-      </p>
-      <div class="project-links">
-        <a href="https://rocket-transfers.vercel.app/" target="_blank" class="project-link">Visit Realm →</a>
+      <div class="skill-scroll-item ink-wash-in">
+        <div class="skill-scroll-title">風 · Wind (Mobile)</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Flutter</span><span class="skill-pill">Dart</span>
+        </div>
       </div>
-    </div>
-
-    <!-- Aetheria -->
-    <div class="project-card reveal">
-      <div class="project-corner"></div>
-      <div class="project-num">Realm · 005</div>
-      <div class="project-name">Aetheria</div>
-      <span class="project-tag">AI · Kaggle · In Progress</span>
-      <p class="project-desc">
-        An AI model constructed from scratch — neuron by neuron, layer by layer. A grimoire of machine intelligence being written in real time.
-      </p>
-      <div class="project-links">
-        <span class="project-wip">In Cultivation →</span>
+      <div class="skill-scroll-item ink-wash-in">
+        <div class="skill-scroll-title">道 · Path (Tools)</div>
+        <div class="skill-pills">
+          <span class="skill-pill">Git</span><span class="skill-pill">VS Code</span>
+          <span class="skill-pill">Vercel</span><span class="skill-pill">Netlify</span>
+          <span class="skill-pill">GDScript</span>
+        </div>
       </div>
-    </div>
-
-  </div>
-
-  <!-- Graveyard -->
-  <div class="graveyard reveal">
-    <div class="graveyard-title">⚰ The Fallen — Projects Lost to the Void</div>
-    <div class="fallen-projects">
-      <span class="fallen">Tralia — Connect Hidden Places</span>
-      <span class="fallen">1Pulse — One Stop Medical App</span>
     </div>
   </div>
 </section>
 
-<!-- FOOTER -->
+<!-- ══ PROJECTS ══ -->
+<section id="projects" class="scroll-chapter">
+  <div class="chapter-inner">
+    <div class="chapter-label ink-wash-in">
+      <span class="chapter-label-cn">三</span>
+      <div class="chapter-label-line"></div>
+      <h2 class="chapter-title">Worlds <em>Constructed</em></h2>
+    </div>
+
+    <div class="projects-scroll">
+
+      <div class="project-chapter ink-wash-in">
+        <div class="project-num-cn">壱</div>
+        <div class="project-body">
+          <div class="project-tag-row">
+            <span class="project-tag">Platform · Full Stack</span>
+          </div>
+          <div class="project-title">Otaku's Library</div>
+          <p class="project-desc">A vast living archive — Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p>
+          <div class="project-link-row">
+            <a href="https://www.otakuslibrary.com/" target="_blank" class="project-link">Visit →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-chapter ink-wash-in">
+        <div class="project-num-cn">弐</div>
+        <div class="project-body">
+          <div class="project-tag-row">
+            <span class="project-tag">App · Flutter · Dart</span>
+            <span class="project-tag">Web · Android · Windows</span>
+          </div>
+          <div class="project-title">Gensaku</div>
+          <p class="project-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows unified under a single vision.</p>
+          <div class="project-link-row">
+            <a href="https://gensaku.vercel.app/" target="_blank" class="project-link">Visit →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-chapter ink-wash-in">
+        <div class="project-num-cn">参</div>
+        <div class="project-body">
+          <div class="project-tag-row">
+            <span class="project-tag">Web · Gamified</span>
+          </div>
+          <div class="project-title">Localore</div>
+          <p class="project-desc">Folklore and mythological creatures from every culture, discovered through play. Knowledge as adventure — mythology made interactive.</p>
+          <div class="project-link-row">
+            <a href="https://localore.vercel.app/" target="_blank" class="project-link">Visit →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-chapter ink-wash-in">
+        <div class="project-num-cn">四</div>
+        <div class="project-body">
+          <div class="project-tag-row">
+            <span class="project-tag">Web · Utility</span>
+          </div>
+          <div class="project-title">Rocket Transfers</div>
+          <p class="project-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p>
+          <div class="project-link-row">
+            <a href="https://rocket-transfers.vercel.app/" target="_blank" class="project-link">Visit →</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="project-chapter ink-wash-in">
+        <div class="project-num-cn">五</div>
+        <div class="project-body">
+          <div class="project-tag-row">
+            <span class="project-tag wip">In Cultivation · AI</span>
+          </div>
+          <div class="project-title">Aetheria</div>
+          <p class="project-desc">An AI model constructed from scratch on Kaggle — neuron by neuron, epoch by epoch. A digital grimoire being written in real time.</p>
+          <div class="project-link-row">
+            <span style="font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.2em; color:var(--vermillion-dim);">Cultivating...</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /projects-scroll -->
+
+    <div class="graveyard-ink ink-wash-in">
+      <p class="graveyard-title-ink">— Worlds that returned to the Void —</p>
+      <div class="fallen-row">
+        <span class="fallen-ink">Tralia · Connect Hidden Places</span>
+        <span class="fallen-ink">1Pulse · One Stop Medical App</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ CLOSING TAO ══ -->
+<section id="tao-close">
+  <div class="tao-mountain-bg"><span>山道</span></div>
+  <p class="tao-final-quote ink-wash-in">
+    "The way that can be built is not true;<br>
+    the world that can be constructed is not true.<br>
+    <br>
+    <span style="font-size:0.85em; opacity:0.7;">Yet here we are — building.</span>"
+  </p>
+  <p class="tao-attribution ink-wash-in">道德經 · Tao Te Ching</p>
+</section>
+
+<!-- ══ FOOTER ══ -->
 <footer>
-  <div class="rune-divider"><span>✦</span></div>
-  <div class="footer-name">DarkStrike</div>
-  <p class="footer-quote">"Every great work begins as a void — then the practitioner arrives."</p>
-  <div class="footer-links">
-    <a href="https://github.com/Darkstrike03" target="_blank" class="footer-link">GitHub</a>
-    <a href="#hero" class="footer-link">Return to Summit</a>
+  <div class="footer-seal">
+    <div class="footer-seal-box"><span>暗</span></div>
+    <div class="footer-name">DarkStrike · 2025</div>
   </div>
-  <p class="footer-copy">© 2025 DarkStrike · All Realms Reserved</p>
+  <div class="footer-right">
+    <div class="footer-links-row">
+      <a href="https://github.com/Darkstrike03" target="_blank" class="footer-link">GitHub</a>
+      <a href="#hero" class="footer-link">Return ↑</a>
+    </div>
+    <p class="footer-copy">The scroll has no end. The way continues.</p>
+  </div>
 </footer>
 
 <script>
-// ============ CURSOR ============
-const cursor = document.getElementById('cursor');
-const cursorRing = document.getElementById('cursorRing');
-let mx = 0, my = 0, rx = 0, ry = 0;
-document.addEventListener('mousemove', e => {
-  mx = e.clientX; my = e.clientY;
-  cursor.style.left = mx + 'px';
-  cursor.style.top = my + 'px';
-});
-function animateCursor() {
-  rx += (mx - rx) * 0.12;
-  ry += (my - ry) * 0.12;
-  cursorRing.style.left = rx + 'px';
-  cursorRing.style.top = ry + 'px';
-  requestAnimationFrame(animateCursor);
+// ══ CURSOR — INK DOT + TRAIL ══
+const dot = document.getElementById('cursorDot');
+const trailContainer = document.getElementById('trailContainer');
+
+const TRAIL_LENGTH = 22;
+const trail = [];
+
+// Pre-create trail dots
+for (let i = 0; i < TRAIL_LENGTH; i++) {
+  const el = document.createElement('div');
+  el.className = 'cursor-trail-dot';
+  const progress = i / TRAIL_LENGTH; // 0 = newest, 1 = oldest
+  const size = Math.max(1, 5.5 * (1 - progress * 0.85));
+  el.style.width  = size + 'px';
+  el.style.height = size + 'px';
+  el.style.opacity = (1 - progress) * 0.72;
+  trailContainer.appendChild(el);
+  trail.push({ el, x: -100, y: -100 });
 }
-animateCursor();
-document.querySelectorAll('a, button').forEach(el => {
-  el.addEventListener('mouseenter', () => {
-    cursor.style.transform = 'translate(-50%,-50%) scale(2)';
-    cursorRing.style.transform = 'translate(-50%,-50%) scale(1.5)';
-    cursorRing.style.borderColor = 'rgba(201,168,76,0.8)';
-  });
-  el.addEventListener('mouseleave', () => {
-    cursor.style.transform = 'translate(-50%,-50%) scale(1)';
-    cursorRing.style.transform = 'translate(-50%,-50%) scale(1)';
-    cursorRing.style.borderColor = 'rgba(201,168,76,0.4)';
-  });
+
+let mx = -100, my = -100;
+// History of recent mouse positions for trail to follow
+const history = Array(TRAIL_LENGTH + 1).fill(null).map(() => ({ x: -100, y: -100 }));
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+  dot.style.left = mx + 'px';
+  dot.style.top  = my + 'px';
 });
 
-// ============ THREE.JS BACKGROUND ============
-const canvas = document.getElementById('bg-canvas');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setSize(window.innerWidth, window.innerHeight);
+// Ink splat on click
+document.addEventListener('click', e => {
+  const s = document.createElement('div');
+  s.className = 'ink-splat';
+  const size = 30 + Math.random() * 40;
+  s.style.cssText = `left:${e.clientX}px;top:${e.clientY}px;width:${size}px;height:${size * 0.7}px;`;
+  document.body.appendChild(s);
+  setTimeout(() => s.remove(), 1300);
+});
+
+function animateTrail() {
+  requestAnimationFrame(animateTrail);
+
+  // Push latest mouse pos into history
+  history.unshift({ x: mx, y: my });
+  history.pop();
+
+  // Each trail dot lags behind — ink drag effect
+  // Use a lerp-chain so each dot smoothly chases the one before
+  trail.forEach((t, i) => {
+    const target = history[Math.min(i * 1.4 | 0, history.length - 1)];
+    t.x += (target.x - t.x) * (0.42 - i * 0.012);
+    t.y += (target.y - t.y) * (0.42 - i * 0.012);
+    t.el.style.left = t.x + 'px';
+    t.el.style.top  = t.y + 'px';
+  });
+}
+animateTrail();
+
+// ══ THREE.JS — INK WASH MOUNTAINS / MIST ══
+const canvas3 = document.getElementById('bg-canvas');
+const renderer = new THREE.WebGLRenderer({canvas:canvas3, antialias:true, alpha:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+renderer.setClearColor(0x000000,0);
 
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
+const camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
 
-// Starfield
-const starCount = 2500;
-const starGeo = new THREE.BufferGeometry();
-const positions = new Float32Array(starCount * 3);
-const colors = new Float32Array(starCount * 3);
-for (let i = 0; i < starCount; i++) {
-  positions[i*3]   = (Math.random() - 0.5) * 80;
-  positions[i*3+1] = (Math.random() - 0.5) * 80;
-  positions[i*3+2] = (Math.random() - 0.5) * 80;
-  const t = Math.random();
-  if (t < 0.15) { colors[i*3]=0.9; colors[i*3+1]=0.1; colors[i*3+2]=0.1; } // red
-  else if (t < 0.25) { colors[i*3]=0.8; colors[i*3+1]=0.65; colors[i*3+2]=0.2; } // gold
-  else { const b=0.4+Math.random()*0.6; colors[i*3]=b*0.85; colors[i*3+1]=b*0.8; colors[i*3+2]=b; } // blue-white
-}
-starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-starGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-const starMat = new THREE.PointsMaterial({ size: 0.07, vertexColors: true, transparent: true, opacity: 0.85 });
-scene.add(new THREE.Points(starGeo, starMat));
-
-// Glowing orb (red-gold nebula center)
-const orbGeo = new THREE.SphereGeometry(1.2, 32, 32);
-const orbMat = new THREE.MeshBasicMaterial({
-  color: 0x3a0a0a,
+// Full-screen quad shader — draws procedural ink-wash mountains
+const geo = new THREE.PlaneGeometry(2,2);
+const mat = new THREE.ShaderMaterial({
   transparent: true,
-  opacity: 0.15,
+  uniforms: {
+    uTime: {value:0},
+    uScroll: {value:0},
+    uMouse: {value: new THREE.Vector2(0.5,0.5)},
+    uRes: {value: new THREE.Vector2(innerWidth,innerHeight)}
+  },
+  vertexShader:`
+    void main(){gl_Position=vec4(position,1.);}
+  `,
+  fragmentShader:`
+    uniform float uTime;
+    uniform float uScroll;
+    uniform vec2 uMouse;
+    uniform vec2 uRes;
+
+    float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}
+    float noise(vec2 p){
+      vec2 i=floor(p), f=fract(p);
+      float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
+      vec2 u=f*f*(3.-2.*f);
+      return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+    }
+    float fbm(vec2 p){
+      float v=0.,a=0.5;
+      for(int i=0;i<6;i++){v+=a*noise(p);p*=2.1;a*=0.5;}
+      return v;
+    }
+
+    // Mountain silhouette
+    float mountain(vec2 uv, float offset, float height, float roughness){
+      float n=fbm(vec2(uv.x*roughness+offset, uTime*0.02));
+      return height + n*0.25 - uv.y;
+    }
+
+    void main(){
+      vec2 uv = gl_FragCoord.xy / uRes;
+      uv.y = 1.0 - uv.y;
+
+      // Scroll parallax
+      float scrollOff = uScroll * 0.0003;
+      vec2 mouse = uMouse;
+
+      // Rice paper base — very subtle warm
+      vec3 paper = vec3(0.961, 0.945, 0.91);
+
+      // Mist layer
+      float mistY = 0.55 + sin(uTime*0.08)*0.02 + fbm(vec2(uv.x*1.5, uTime*0.04))*0.06;
+      float mist = smoothstep(0.0, 0.35, abs(uv.y - mistY));
+      vec3 mistCol = vec3(0.92,0.90,0.87);
+
+      // Far mountains (very faint, gray)
+      float farMtn = mountain(uv, 3.7 + scrollOff*0.3, 0.52, 2.2);
+      float farAlpha = smoothstep(0.0, 0.015, farMtn) * 0.12;
+      vec3 farCol = vec3(0.72, 0.70, 0.68);
+
+      // Mid mountains
+      float midMtn = mountain(uv, 1.2 + scrollOff*0.6, 0.42, 3.1);
+      float midAlpha = smoothstep(0.0, 0.018, midMtn) * 0.22;
+      vec3 midCol = vec3(0.45, 0.42, 0.38);
+
+      // Near mountains (darker ink)
+      float nearMtn = mountain(uv, 0.0 + scrollOff, 0.28, 4.5);
+      float nearAlpha = smoothstep(0.0, 0.02, nearMtn) * 0.45;
+      vec3 nearCol = vec3(0.18, 0.16, 0.13);
+
+      // Water reflection (bottom strip)
+      float waterY = uv.y - 0.12;
+      float waterRipple = fbm(vec2(uv.x*8.0, uTime*0.3))*0.015;
+      float waterAlpha = smoothstep(0.0, 0.08, -(uv.y - 0.18 + waterRipple)) * 0.06;
+
+      // Vertical ink drip streaks
+      float drip1 = smoothstep(0.002,0.0, abs(uv.x-0.22)) * smoothstep(0.3,0.7,uv.y) * 0.04;
+      float drip2 = smoothstep(0.002,0.0, abs(uv.x-0.67)) * smoothstep(0.15,0.55,uv.y) * 0.03;
+
+      // Red sun
+      vec2 sunPos = vec2(0.52 + mouse.x*0.02, 0.22 - mouse.y*0.01);
+      float sunDist = length(uv - sunPos);
+      float sun = smoothstep(0.065, 0.055, sunDist);
+      float sunGlow = smoothstep(0.18, 0.055, sunDist) * 0.08;
+      vec3 sunCol = vec3(0.75, 0.22, 0.15);
+
+      // Compose
+      vec3 col = paper;
+      col = mix(col, mistCol, 1.0-mist);
+      col = mix(col, farCol, farAlpha);
+      col = mix(col, midCol, midAlpha);
+      col = mix(col, nearCol, nearAlpha);
+      col = mix(col, mix(col, vec3(0.78,0.88,0.92), 1.0), waterAlpha);
+      col += sunGlow * sunCol;
+      col = mix(col, sunCol, sun);
+      col -= (drip1+drip2);
+
+      // Vignette
+      float vig = 1.0 - smoothstep(0.4, 1.2, length((uv-0.5)*vec2(1.0,1.4)));
+      col = mix(col, paper*0.92, 1.0-vig*0.95);
+
+      // Edge ink bleed
+      float edgeBleed = smoothstep(0.96,1.0,uv.x) + smoothstep(0.04,0.0,uv.x);
+      col = mix(col, nearCol, edgeBleed*0.08);
+
+      gl_FragColor = vec4(col, 0.95);
+    }
+  `
 });
-const orb = new THREE.Mesh(orbGeo, orbMat);
-orb.position.set(2, -1, -8);
-scene.add(orb);
+scene.add(new THREE.Mesh(geo,mat));
 
-// Outer glow ring
-const ringGeo = new THREE.TorusGeometry(2.5, 0.02, 16, 100);
-const ringMat = new THREE.MeshBasicMaterial({ color: 0x8b1a1a, transparent: true, opacity: 0.12 });
-const ring = new THREE.Mesh(ringGeo, ringMat);
-ring.position.set(2, -1, -8);
-ring.rotation.x = Math.PI / 4;
-scene.add(ring);
-
-const ring2Geo = new THREE.TorusGeometry(3.5, 0.01, 16, 100);
-const ring2Mat = new THREE.MeshBasicMaterial({ color: 0xc9a84c, transparent: true, opacity: 0.07 });
-const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
-ring2.position.set(2, -1, -8);
-ring2.rotation.x = Math.PI / 3;
-ring2.rotation.y = Math.PI / 6;
-scene.add(ring2);
-
-// Floating rune particles
-const runeCount = 200;
-const runeGeo = new THREE.BufferGeometry();
-const runePos = new Float32Array(runeCount * 3);
-for (let i = 0; i < runeCount; i++) {
-  runePos[i*3]   = (Math.random() - 0.5) * 30;
-  runePos[i*3+1] = (Math.random() - 0.5) * 30;
-  runePos[i*3+2] = (Math.random() - 0.5) * 15;
-}
-runeGeo.setAttribute('position', new THREE.BufferAttribute(runePos, 3));
-const runeMat = new THREE.PointsMaterial({ size: 0.15, color: 0xc9a84c, transparent: true, opacity: 0.08 });
-const runePoints = new THREE.Points(runeGeo, runeMat);
-scene.add(runePoints);
-
-let scrollY = 0;
-window.addEventListener('scroll', () => { scrollY = window.scrollY; });
-
-let mouseX = 0, mouseY = 0;
-document.addEventListener('mousemove', e => {
-  mouseX = (e.clientX / window.innerWidth - 0.5) * 2;
-  mouseY = -(e.clientY / window.innerHeight - 0.5) * 2;
+let scrollY=0, targetMX=0.5, targetMY=0.5, curMX=0.5, curMY=0.5;
+window.addEventListener('scroll',()=>scrollY=window.scrollY);
+document.addEventListener('mousemove',e=>{
+  targetMX=e.clientX/innerWidth;
+  targetMY=e.clientY/innerHeight;
 });
 
-let t = 0;
-function animate() {
-  requestAnimationFrame(animate);
-  t += 0.004;
+let t3=0;
+(function loop(){
+  requestAnimationFrame(loop);
+  t3+=0.016;
+  curMX += (targetMX-curMX)*0.04;
+  curMY += (targetMY-curMY)*0.04;
+  mat.uniforms.uTime.value=t3;
+  mat.uniforms.uScroll.value=scrollY;
+  mat.uniforms.uMouse.value.set(curMX,curMY);
+  renderer.render(scene,camera);
+})();
 
-  // Stars slowly rotate
-  scene.rotation.y = mouseX * 0.05 + t * 0.02;
-  scene.rotation.x = mouseY * 0.03 + scrollY * 0.0003;
-
-  ring.rotation.z += 0.002;
-  ring2.rotation.z -= 0.001;
-  runePoints.rotation.y += 0.001;
-
-  // Breathing orb
-  orb.scale.setScalar(1 + Math.sin(t) * 0.08);
-
-  renderer.render(scene, camera);
-}
-animate();
-
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+window.addEventListener('resize',()=>{
+  renderer.setSize(innerWidth,innerHeight);
+  mat.uniforms.uRes.value.set(innerWidth,innerHeight);
 });
 
-// ============ FLOATING RUNE CHARS ============
-const runeChars = ['⬡','⬢','◈','⊕','✦','◉','⟐','⊛','✧','⬟'];
-const container = document.getElementById('floatingRunes');
-for (let i = 0; i < 8; i++) {
-  const el = document.createElement('span');
-  el.className = 'rune-char';
-  el.textContent = runeChars[Math.floor(Math.random() * runeChars.length)];
-  el.style.left = Math.random() * 100 + '%';
-  el.style.animationDuration = (20 + Math.random() * 30) + 's';
-  el.style.animationDelay = (Math.random() * 20) + 's';
-  el.style.fontSize = (3 + Math.random() * 6) + 'rem';
-  container.appendChild(el);
+// ══ BIRDS (2D canvas) ══
+const birdCanvas = document.getElementById('bird-canvas');
+const bctx = birdCanvas.getContext('2d');
+birdCanvas.width = innerWidth;
+birdCanvas.height = innerHeight;
+window.addEventListener('resize',()=>{ birdCanvas.width=innerWidth; birdCanvas.height=innerHeight; });
+
+// Bird: simple ink-brushstroke "M" shape
+function drawBird(ctx, x, y, size, flap) {
+  ctx.save();
+  ctx.translate(x,y);
+  const wing = Math.sin(flap)*size*0.6;
+  ctx.beginPath();
+  ctx.moveTo(-size, wing*0.3);
+  ctx.quadraticCurveTo(-size*0.5, -wing, 0, 0);
+  ctx.quadraticCurveTo(size*0.5, -wing, size, wing*0.3);
+  ctx.strokeStyle = 'rgba(26,21,16,0.55)';
+  ctx.lineWidth = size*0.18;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+  ctx.restore();
 }
 
-// ============ PARTICLES ============
-const pContainer = document.getElementById('particles');
-for (let i = 0; i < 30; i++) {
-  const p = document.createElement('div');
-  p.className = 'particle';
-  p.style.left = Math.random() * 100 + 'vw';
-  p.style.top = Math.random() * 100 + 'vh';
-  p.style.animationDuration = (4 + Math.random() * 8) + 's';
-  p.style.animationDelay = (Math.random() * 10) + 's';
-  p.style.background = Math.random() > 0.7 ? '#8b1a1a' : '#c9a84c';
-  pContainer.appendChild(p);
-}
+// Flock of birds
+const birds = Array.from({length:14}, (_,i) => ({
+  x: -80 - i*40 - Math.random()*60,
+  y: 80 + Math.random()*120 + (i%3)*30,
+  speed: 0.28 + Math.random()*0.18,
+  size: 5 + Math.random()*5,
+  flap: Math.random()*Math.PI*2,
+  flapSpeed: 0.04 + Math.random()*0.03,
+  drift: Math.random()*0.4-0.2,
+}));
 
-// ============ SCROLL REVEAL ============
-const reveals = document.querySelectorAll('.reveal');
-const observer = new IntersectionObserver(entries => {
-  entries.forEach((e, i) => {
-    if (e.isIntersecting) {
-      setTimeout(() => e.target.classList.add('visible'), i * 80);
+function animateBirds(){
+  requestAnimationFrame(animateBirds);
+  bctx.clearRect(0,0,birdCanvas.width,birdCanvas.height);
+  birds.forEach(b=>{
+    b.x += b.speed;
+    b.y += b.drift*0.2;
+    b.flap += b.flapSpeed;
+    if(b.x > birdCanvas.width+80) {
+      b.x = -80 - Math.random()*100;
+      b.y = 60 + Math.random()*180;
+    }
+    // Only show birds in upper portion (misty sky area)
+    if(b.y < birdCanvas.height*0.45) {
+      drawBird(bctx, b.x, b.y, b.size, b.flap);
     }
   });
-}, { threshold: 0.1 });
-reveals.forEach(r => observer.observe(r));
+}
+animateBirds();
+
+// ══ SMALL INK PAINTING on about-canvas ══
+const pc = document.getElementById('painting-canvas');
+if(pc){
+  const pctx = pc.getContext('2d');
+  // Draw a simple ink wash mini scene
+  function inkPainting(){
+    pctx.clearRect(0,0,280,300);
+    // Sky wash
+    const sky = pctx.createLinearGradient(0,0,0,200);
+    sky.addColorStop(0,'rgba(220,210,195,0)');
+    sky.addColorStop(1,'rgba(200,190,175,0.15)');
+    pctx.fillStyle=sky; pctx.fillRect(0,0,280,200);
+
+    // Mountains — layered
+    function mtn(pts, alpha, blur){
+      pctx.save();
+      pctx.filter=`blur(${blur}px)`;
+      pctx.beginPath();
+      pctx.moveTo(pts[0][0],pts[0][1]);
+      for(let i=1;i<pts.length;i++) pctx.lineTo(pts[i][0],pts[i][1]);
+      pctx.closePath();
+      pctx.fillStyle=`rgba(30,25,18,${alpha})`;
+      pctx.fill();
+      pctx.filter='none';
+      pctx.restore();
+    }
+    // Far mtn
+    mtn([[20,180],[70,95],[110,130],[160,80],[210,110],[260,170],[280,180]],0.08,4);
+    // Mid mtn
+    mtn([[0,180],[40,120],[80,90],[130,105],[180,75],[230,100],[280,175]],0.2,2);
+    // Near mtn
+    mtn([[0,200],[30,145],[70,110],[110,135],[140,100],[190,130],[230,115],[280,195],[280,300],[0,300]],0.45,0);
+
+    // Mist
+    const mist = pctx.createLinearGradient(0,150,0,190);
+    mist.addColorStop(0,'rgba(245,240,232,0)');
+    mist.addColorStop(0.5,'rgba(245,240,232,0.55)');
+    mist.addColorStop(1,'rgba(245,240,232,0)');
+    pctx.fillStyle=mist; pctx.fillRect(0,150,280,60);
+
+    // Water
+    pctx.fillStyle='rgba(180,190,200,0.1)';
+    pctx.fillRect(0,210,280,90);
+    // Ripple lines
+    for(let i=0;i<4;i++){
+      pctx.beginPath();
+      pctx.moveTo(10+i*5, 225+i*8);
+      pctx.bezierCurveTo(70,222+i*8, 140,230+i*8, 200,223+i*8);
+      pctx.strokeStyle=`rgba(80,75,65,0.07)`;
+      pctx.lineWidth=0.8;
+      pctx.stroke();
+    }
+
+    // Red sun
+    pctx.beginPath();
+    pctx.arc(148,55,22,0,Math.PI*2);
+    pctx.fillStyle='rgba(190,60,45,0.75)';
+    pctx.fill();
+
+    // Boat
+    pctx.save();
+    pctx.translate(90,218);
+    pctx.beginPath();
+    pctx.moveTo(-20,0); pctx.quadraticCurveTo(0,8,20,0);
+    pctx.strokeStyle='rgba(30,25,18,0.7)'; pctx.lineWidth=1.5; pctx.stroke();
+    // Pole
+    pctx.beginPath(); pctx.moveTo(5,0); pctx.lineTo(5,-22);
+    pctx.strokeStyle='rgba(30,25,18,0.6)'; pctx.lineWidth=1; pctx.stroke();
+    // Figure
+    pctx.beginPath(); pctx.arc(5,-24,3,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,0.65)'; pctx.fill();
+    pctx.restore();
+
+    // Trees (left)
+    function tree(x,y,h){
+      pctx.save();
+      pctx.translate(x,y);
+      pctx.beginPath();
+      pctx.moveTo(0,0); pctx.lineTo(0,-h);
+      pctx.strokeStyle='rgba(30,25,18,0.6)'; pctx.lineWidth=1.2; pctx.stroke();
+      // Branches
+      for(let i=0;i<5;i++){
+        const by=-h*(0.3+i*0.14);
+        const bx=(i%2===0?1:-1)*(8+Math.random()*6);
+        pctx.beginPath();
+        pctx.moveTo(0,by); pctx.lineTo(bx,by-5);
+        pctx.strokeStyle='rgba(30,25,18,0.35)'; pctx.lineWidth=0.8; pctx.stroke();
+      }
+      pctx.restore();
+    }
+    tree(38,207,35); tree(28,207,28); tree(50,210,20);
+
+    // Cow silhouette (right)
+    pctx.save();
+    pctx.translate(210,215);
+    pctx.beginPath();
+    pctx.ellipse(0,-5,16,8,0,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,0.55)'; pctx.fill();
+    // Legs
+    for(let i=-10;i<=10;i+=7){
+      pctx.beginPath(); pctx.moveTo(i,-1); pctx.lineTo(i+1,10);
+      pctx.strokeStyle='rgba(30,25,18,0.5)'; pctx.lineWidth=2; pctx.stroke();
+    }
+    // Head
+    pctx.beginPath(); pctx.ellipse(14,-7,6,5,0.4,0,Math.PI*2);
+    pctx.fillStyle='rgba(30,25,18,0.55)'; pctx.fill();
+    pctx.restore();
+  }
+  inkPainting();
+
+  // Animate subtle mist drift
+  let paintT=0;
+  function animatePaint(){
+    requestAnimationFrame(animatePaint);
+    paintT+=0.012;
+    inkPainting();
+    // Mist drift overlay
+    pctx.save();
+    const mistDrift = pctx.createLinearGradient(0,155,0,185);
+    const mo = 0.08+Math.sin(paintT)*0.04;
+    mistDrift.addColorStop(0,'rgba(245,240,232,0)');
+    mistDrift.addColorStop(0.5,`rgba(245,240,232,${mo})`);
+    mistDrift.addColorStop(1,'rgba(245,240,232,0)');
+    pctx.fillStyle=mistDrift;
+    pctx.fillRect(0,155,280,50);
+    pctx.restore();
+  }
+  animatePaint();
+}
+
+// ══ INK DRIPS (hero) ══
+const dripsContainer = document.getElementById('inkDrips');
+for(let i=0;i<8;i++){
+  const d=document.createElement('div');
+  d.className='ink-drip';
+  d.style.cssText=`
+    left:${5+i*13}%;
+    height:${60+Math.random()*120}px;
+    animation-duration:${6+Math.random()*8}s;
+    animation-delay:${Math.random()*10}s;
+  `;
+  dripsContainer.appendChild(d);
+}
+
+// ══ SCROLL REVEAL ══
+const items = document.querySelectorAll('.ink-wash-in');
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){ e.target.classList.add('inked'); }
+  });
+},{threshold:0.12});
+items.forEach(el=>obs.observe(el));
 </script>
 </body>
 </html>
