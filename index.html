@@ -1,859 +1,1602 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>DarkStrike — 墨 Ink Portfolio</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=IM+Fell+DW+Pica:ital@0;1&family=Cinzel:wght@300;400;600&family=Noto+Serif:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DarkStrike · Gu Cultivator · Builder of Worlds</title>
+<!--
+  ╔══════════════════════════════════════════════════════════╗
+  ║  SOURCE SCRIPTURE — READ BY THE WORTHY                   ║
+  ║                                                          ║
+  ║  "All living beings are Gu,                              ║
+  ║   heaven and earth is a furnace,                         ║
+  ║   fate is the fire that never stops burning."            ║
+  ║                                                          ║
+  ║  — Reverend Insanity, Chapter 1                          ║
+  ║                                                          ║
+  ║  Three seals remain hidden in the dark.                  ║
+  ║  The cicada knows the way. Follow its glow.              ║
+  ╚══════════════════════════════════════════════════════════╝
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
+/* ════════════════════════════════════════
+   VARIABLES
+════════════════════════════════════════ */
 :root {
-  --rice: #f4efe4;
-  --ink-0: #1a1510;
-  --ink-1: #2d2820;
-  --ink-2: #4a4035;
-  --ink-3: #6b5f52;
-  --ink-4: #9a8c7c;
-  --vermillion: #c0392b;
-  --vermillion-dim: #8b2020;
-  --seal-red: #a01010;
+  --void:       #01070a;
+  --cave:       #020b07;
+  --deep:       #040e08;
+  --surface:    #071209;
+  --jade:       #0b4d25;
+  --jade-glow:  #15c85e;
+  --jade-mid:   #0d7a38;
+  --jade-dim:   #083d1c;
+  --jade-faint: rgba(21,200,94,.04);
+  --gold:       #c49020;
+  --gold-glow:  #e8be4c;
+  --gold-dim:   #7a5c14;
+  --blood:      #6e0808;
+  --blood-lit:  #aa1010;
+  --text:       #708870;
+  --text-lit:   #a8bca8;
+  --parchment:  #d0ddd0;
+  --line:       rgba(21,200,94,.09);
+  --ease:       cubic-bezier(.22,.61,.36,1);
 }
-* { margin:0; padding:0; box-sizing:border-box; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body {
-  background: var(--rice);
-  color: var(--ink-1);
-  font-family: 'Noto Serif', serif;
+  background: var(--void);
+  color: var(--text);
+  font-family: 'EB Garamond', serif;
   overflow-x: hidden;
   cursor: none;
 }
+::selection { background: rgba(21,200,94,.22); color: var(--parchment); }
 
-/* ════ CURSOR ════ */
-#cursorDot {
+/* ── CURSOR ─────────────────────────────────────────────── */
+#c-dot {
   position: fixed;
-  width: 8px; height: 8px;
-  background: var(--ink-0);
+  width: 9px; height: 9px;
+  border: 1px solid rgba(21,200,94,.75);
   border-radius: 50%;
   pointer-events: none;
-  z-index: 10000;
   transform: translate(-50%,-50%);
-  box-shadow: 0 0 6px rgba(26,21,16,.4);
+  z-index: 9999;
+  transition: width .18s var(--ease), height .18s var(--ease),
+              border-color .18s, opacity .18s;
 }
-#trailCanvas {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 9999;
-}
-
-/* ════ INK SPLAT ════ */
-.ink-splat-el {
-  position: fixed; pointer-events: none; z-index: 9990;
-  transform: translate(-50%,-50%);
-  animation: splatFade 1.4s cubic-bezier(.2,.8,.3,1) forwards;
-}
-@keyframes splatFade {
-  0%   { opacity:.9;  transform:translate(-50%,-50%) scale(0)   rotate(0deg); }
-  35%  { opacity:.6;  transform:translate(-50%,-50%) scale(1)   rotate(8deg); }
-  100% { opacity:0;   transform:translate(-50%,-50%) scale(1.7) rotate(14deg); }
-}
-
-/* ════ BG CANVASES ════ */
-#bg-canvas, #bird-canvas {
-  position: fixed; inset:0; width:100%; height:100%;
+#c-dot.grow { width: 26px; height: 26px; opacity: .5; }
+#c-dot.gold { border-color: rgba(228,190,76,.9); }
+#c-ring {
+  position: fixed;
+  width: 22px; height: 22px;
+  border: 1px solid rgba(21,200,94,.18);
+  border-radius: 50%;
   pointer-events: none;
-}
-#bg-canvas   { z-index: 0; }
-#bird-canvas { z-index: 1; }
-
-/* ════ PAPER TEXTURE ════ */
-body::before {
-  content:''; position:fixed; inset:0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23p)' opacity='.035'/%3E%3C/svg%3E");
-  pointer-events:none; z-index:1; mix-blend-mode:multiply;
-}
-body::after {
-  content:''; position:fixed; inset:0;
-  background: radial-gradient(ellipse 90% 90% at 50% 50%, transparent 55%, rgba(160,145,120,.2) 100%);
-  pointer-events:none; z-index:1;
-}
-section { position:relative; z-index:2; }
-
-/* ════ NAV ════ */
-nav {
-  position:fixed; top:0; left:0; right:0; z-index:100;
-  padding:1.2rem 3rem;
-  display:flex; justify-content:space-between; align-items:center;
-  background:linear-gradient(to bottom, rgba(244,239,228,.97) 70%, transparent);
-}
-.nav-seal {
-  font-family:'Noto Serif SC',serif; font-size:1.2rem; color:var(--seal-red);
-  width:42px; height:42px; border:2px solid var(--seal-red);
-  display:flex; align-items:center; justify-content:center;
-  transform:rotate(-3deg); flex-shrink:0;
-}
-.nav-links { display:flex; gap:2.5rem; list-style:none; }
-.nav-links a {
-  font-family:'Cinzel',serif; font-size:.68rem;
-  letter-spacing:.3em; text-transform:uppercase;
-  color:var(--ink-3); text-decoration:none; transition:color .3s;
-}
-.nav-links a:hover { color:var(--ink-0); }
-.nav-hamburger {
-  display:none; flex-direction:column; gap:5px; cursor:none; padding:4px;
-}
-.nav-hamburger span { display:block; width:22px; height:1.5px; background:var(--ink-1); }
-.nav-mobile-menu {
-  display:none; position:fixed; inset:0;
-  background:rgba(244,239,228,.97); z-index:99;
-  flex-direction:column; align-items:center; justify-content:center; gap:3rem;
-}
-.nav-mobile-menu.open { display:flex; }
-.nav-mobile-menu a {
-  font-family:'Cinzel',serif; font-size:1.1rem;
-  letter-spacing:.35em; text-transform:uppercase;
-  color:var(--ink-1); text-decoration:none;
-}
-.nav-close {
-  position:absolute; top:1.5rem; right:2rem;
-  font-family:'Cinzel',serif; font-size:1.2rem; color:var(--ink-2); cursor:none;
+  transform: translate(-50%,-50%);
+  z-index: 9998;
 }
 
-/* ════ HERO ════ */
-#hero {
-  min-height:100vh; min-height:100svh;
-  display:flex; flex-direction:column;
-  justify-content:center; align-items:center;
-  text-align:center; padding:7rem 1.5rem 5rem;
-  position:relative; overflow:hidden;
-}
-.hero-kanji {
-  font-family:'Noto Serif SC',serif;
-  font-size:clamp(4.5rem,18vw,13rem);
-  font-weight:300; line-height:1; color:var(--ink-0);
-  text-shadow:2px 3px 14px rgba(26,21,16,.1);
-  position:relative; z-index:4;
-}
-.hero-name-en {
-  font-family:'Cinzel',serif;
-  font-size:clamp(.6rem,1.8vw,.82rem);
-  letter-spacing:.45em; text-transform:uppercase;
-  color:var(--ink-3); margin-top:.6rem; z-index:4; position:relative;
-}
-.hero-tao {
-  font-family:'IM Fell DW Pica',serif; font-style:italic;
-  font-size:clamp(.95rem,2.2vw,1.3rem);
-  color:var(--ink-2); max-width:560px; line-height:1.95;
-  margin-top:2.5rem; padding:0 1.8rem; position:relative; z-index:4;
-}
-.hero-tao::before { content:'「'; position:absolute; left:.1rem; top:-.2em; font-family:'Noto Serif SC',serif; font-style:normal; color:var(--vermillion); font-size:1.8rem; opacity:.45; }
-.hero-tao::after  { content:'」'; position:absolute; right:.1rem; bottom:-.4em; font-family:'Noto Serif SC',serif; font-style:normal; color:var(--vermillion); font-size:1.8rem; opacity:.45; }
-.hero-tao-src { display:block; font-family:'Cinzel',serif; font-style:normal; font-size:.6rem; letter-spacing:.25em; color:var(--ink-4); margin-top:.8rem; text-align:right; }
-.hero-sub { font-family:'Cinzel',serif; font-size:.7rem; letter-spacing:.4em; color:var(--ink-4); margin-top:2.5rem; text-transform:uppercase; position:relative; z-index:4; }
-.hero-cta-row { display:flex; gap:1.2rem; margin-top:2.2rem; flex-wrap:wrap; justify-content:center; position:relative; z-index:4; }
-.btn-ink {
-  font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
-  padding:.85rem 2rem; background:var(--ink-0); color:var(--rice); text-decoration:none; cursor:none;
-  transition:background .3s, transform .25s;
-}
-.btn-ink:hover { background:var(--vermillion); transform:translateY(-2px); }
-.btn-ink-outline {
-  font-family:'Cinzel',serif; font-size:.68rem; letter-spacing:.22em; text-transform:uppercase;
-  padding:.85rem 2rem; background:transparent; color:var(--ink-1); text-decoration:none;
-  border:1px solid var(--ink-3); cursor:none; transition:all .3s;
-}
-.btn-ink-outline:hover { border-color:var(--ink-0); color:var(--ink-0); }
-.scroll-hint {
-  position:absolute; bottom:2rem; left:50%; transform:translateX(-50%);
-  display:flex; flex-direction:column; align-items:center; gap:.4rem; z-index:4;
-}
-.scroll-hint span { font-family:'Cinzel',serif; font-size:.55rem; letter-spacing:.4em; color:var(--ink-4); text-transform:uppercase; }
-.scroll-line { width:1px; height:50px; background:linear-gradient(to bottom,var(--ink-2),transparent); animation:scrollPulse 2.2s ease-in-out infinite; }
-@keyframes scrollPulse { 0%,100%{opacity:.35;transform:scaleY(.7);} 50%{opacity:.9;transform:scaleY(1);} }
+/* ── THREE.JS CANVAS ───────────────────────────────────── */
+#gl { position: fixed; inset: 0; z-index: 0; display: block; }
 
-/* ════ INK DROP REVEAL ════ */
-.idr {
-  opacity:0;
+/* ── LEFT RAIL ──────────────────────────────────────────── */
+#rail {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 3.8rem;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 0;
+  border-right: 1px solid var(--line);
+  background: rgba(1,7,10,.6);
+  backdrop-filter: blur(8px);
 }
-.idr.revealed {
-  animation: inkDrop 1.05s cubic-bezier(.16,1,.3,1) forwards;
+.rail-brand {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .22em;
+  color: var(--jade-mid);
+  writing-mode: vertical-rl;
+  user-select: none;
+  opacity: .55;
+  margin-bottom: 2rem;
 }
-@keyframes inkDrop {
-  0%   { opacity:0; clip-path:circle(0% at var(--dx,50%) var(--dy,25%)); filter:blur(10px) saturate(0); }
-  45%  { opacity:.9; filter:blur(2px) saturate(.6); }
-  100% { opacity:1; clip-path:circle(150% at var(--dx,50%) var(--dy,25%)); filter:blur(0) saturate(1); }
+.rail-line {
+  flex: 1;
+  width: 1px;
+  background: linear-gradient(to bottom,
+    transparent, rgba(21,200,94,.2) 20%, rgba(21,200,94,.2) 80%, transparent);
 }
-
-/* ════ SECTIONS ════ */
-.scroll-chapter { padding:8rem 1.5rem; }
-.chapter-inner { max-width:1080px; margin:0 auto; }
-.chapter-label { display:flex; align-items:center; gap:1.2rem; margin-bottom:3.5rem; }
-.chapter-label-cn { font-family:'Noto Serif SC',serif; font-size:.7rem; color:var(--vermillion); letter-spacing:.3em; writing-mode:vertical-rl; }
-.chapter-label-line { height:1px; width:80px; background:linear-gradient(to right,var(--ink-3),transparent); flex-shrink:0; }
-.chapter-title { font-family:'IM Fell DW Pica',serif; font-size:clamp(1.8rem,4.5vw,3.2rem); font-weight:400; color:var(--ink-0); line-height:1.15; font-style:italic; }
-.chapter-title em { font-style:normal; color:var(--vermillion); }
-
-/* ════ ABOUT ════ */
-.about-layout { display:grid; grid-template-columns:1fr 1.3fr; gap:5rem; align-items:start; }
-.about-kanji-col { display:flex; flex-direction:column; align-items:center; gap:2rem; position:relative; }
-.vertical-kanji { font-family:'Noto Serif SC',serif; font-size:clamp(2rem,6vw,5rem); font-weight:300; color:var(--ink-1); writing-mode:vertical-rl; line-height:1.3; letter-spacing:.1em; opacity:.08; position:absolute; right:0; top:0; pointer-events:none; user-select:none; }
-.seal-stamp { width:72px; height:72px; border:2px solid var(--seal-red); display:flex; align-items:center; justify-content:center; transform:rotate(-6deg); position:relative; flex-shrink:0; }
-.seal-stamp::before { content:''; position:absolute; inset:3px; border:1px solid var(--seal-red); opacity:.4; }
-.seal-stamp span { font-family:'Noto Serif SC',serif; font-size:1.5rem; color:var(--seal-red); }
-.about-text-col p { font-family:'IM Fell DW Pica',serif; font-size:1.05rem; line-height:2; color:var(--ink-2); margin-bottom:1.6rem; }
-.about-text-col p em { color:var(--ink-0); font-style:normal; font-weight:700; }
-.about-text-col p i  { color:var(--vermillion); }
-.tao-pull { margin:2.5rem 0; padding:1.8rem 2rem; border-left:2px solid var(--ink-0); background:rgba(26,21,16,.03); position:relative; }
-.tao-pull p { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:1.1rem; line-height:1.85; color:var(--ink-1); margin:0; }
-.tao-pull::before { content:'道'; position:absolute; right:1.2rem; top:50%; transform:translateY(-50%); font-family:'Noto Serif SC',serif; font-size:3.5rem; color:var(--ink-0); opacity:.04; user-select:none; }
-
-/* ════ SKILLS ════ */
-#skills { background:rgba(26,21,16,.025); }
-.skills-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.2rem; }
-.skill-card { background:rgba(244,239,228,.9); border:1px solid rgba(26,21,16,.1); padding:1.8rem; position:relative; overflow:hidden; transition:transform .35s, box-shadow .35s; }
-.skill-card::after { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--ink-0); transform:scaleX(0); transform-origin:left; transition:transform .4s ease; }
-.skill-card:hover { transform:translateY(-5px); box-shadow:0 14px 40px rgba(26,21,16,.1); }
-.skill-card:hover::after { transform:scaleX(1); }
-.skill-card-title { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.3em; color:var(--vermillion); margin-bottom:1.1rem; text-transform:uppercase; }
-.skill-pills { display:flex; flex-wrap:wrap; gap:.4rem; }
-.skill-pill { font-family:'Noto Serif',serif; font-size:.78rem; padding:.22rem .7rem; border:1px solid rgba(26,21,16,.15); color:var(--ink-2); background:transparent; transition:all .25s; cursor:default; }
-.skill-pill:hover { background:var(--ink-0); color:var(--rice); border-color:var(--ink-0); }
-
-/* ════ PROJECTS ════ */
-.projects-list { display:flex; flex-direction:column; }
-.project-row { display:grid; grid-template-columns:64px 1fr; gap:0 2.5rem; padding:3.5rem 0; border-bottom:1px solid rgba(26,21,16,.09); transition:background .3s; }
-.project-row:last-child { border-bottom:none; }
-.project-row:hover { background:rgba(26,21,16,.02); }
-.project-num-cn { font-family:'Noto Serif SC',serif; font-size:2.2rem; font-weight:300; color:var(--ink-0); opacity:.12; writing-mode:vertical-rl; line-height:1; user-select:none; align-self:start; padding-top:.2rem; }
-.project-body { display:flex; flex-direction:column; gap:.7rem; }
-.project-tags { display:flex; gap:.6rem; flex-wrap:wrap; }
-.project-tag { font-family:'Cinzel',serif; font-size:.58rem; letter-spacing:.2em; text-transform:uppercase; padding:.18rem .65rem; border:1px solid rgba(26,21,16,.18); color:var(--ink-3); }
-.project-tag.wip { border-color:var(--vermillion-dim); color:var(--vermillion-dim); }
-.project-title { font-family:'IM Fell DW Pica',serif; font-size:clamp(1.3rem,3vw,1.9rem); font-weight:400; color:var(--ink-0); line-height:1.2; }
-.project-desc { font-family:'Noto Serif',serif; font-size:.92rem; line-height:1.9; color:var(--ink-3); max-width:640px; }
-.project-link { font-family:'Cinzel',serif; font-size:.63rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-1); text-decoration:none; border-bottom:1px solid var(--ink-3); padding-bottom:2px; transition:color .3s, border-color .3s; display:inline-block; align-self:start; }
-.project-link:hover { color:var(--vermillion); border-color:var(--vermillion); }
-.graveyard-ink { margin-top:3.5rem; padding:2.5rem; background:rgba(26,21,16,.03); border:1px solid rgba(26,21,16,.07); text-align:center; position:relative; overflow:hidden; }
-.graveyard-ink::before { content:'逝'; font-family:'Noto Serif SC',serif; font-size:7rem; color:var(--ink-0); opacity:.025; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); user-select:none; }
-.graveyard-label { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:.82rem; color:var(--ink-4); margin-bottom:1.2rem; }
-.fallen-row { display:flex; gap:2.5rem; justify-content:center; flex-wrap:wrap; }
-.fallen-ink { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:1rem; color:var(--ink-4); opacity:.5; text-decoration:line-through; text-decoration-color:rgba(192,57,43,.4); }
-
-/* ════ CLOSING TAO ════ */
-#tao-close { padding:9rem 1.5rem; text-align:center; position:relative; overflow:hidden; }
-.tao-bg-k { position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:center; pointer-events:none; overflow:hidden; }
-.tao-bg-k span { font-family:'Noto Serif SC',serif; font-size:clamp(8rem,22vw,20rem); font-weight:300; color:var(--ink-0); opacity:.025; user-select:none; line-height:1; }
-.tao-final { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:clamp(1.1rem,2.8vw,1.8rem); color:var(--ink-1); max-width:640px; margin:0 auto 1.5rem; line-height:1.85; position:relative; z-index:2; }
-.tao-attr { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.35em; color:var(--vermillion); text-transform:uppercase; position:relative; z-index:2; }
-
-/* ════ FOOTER ════ */
-footer { padding:3.5rem 1.5rem; border-top:1px solid rgba(26,21,16,.1); display:flex; justify-content:space-between; align-items:center; max-width:1080px; margin:0 auto; position:relative; z-index:2; flex-wrap:wrap; gap:2rem; }
-.footer-seal-box { width:50px; height:50px; border:2px solid var(--seal-red); display:flex; align-items:center; justify-content:center; transform:rotate(-4deg); }
-.footer-seal-box span { font-family:'Noto Serif SC',serif; font-size:1.1rem; color:var(--seal-red); }
-.footer-name { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.3em; color:var(--ink-4); text-transform:uppercase; margin-top:.5rem; }
-.footer-right { display:flex; flex-direction:column; align-items:flex-end; gap:.8rem; }
-.footer-links-row { display:flex; gap:1.8rem; }
-.footer-link { font-family:'Cinzel',serif; font-size:.62rem; letter-spacing:.2em; text-transform:uppercase; color:var(--ink-3); text-decoration:none; transition:color .3s; }
-.footer-link:hover { color:var(--vermillion); }
-.footer-copy { font-family:'IM Fell DW Pica',serif; font-style:italic; font-size:.8rem; color:var(--ink-4); opacity:.6; }
-
-/* ════ 1. SCROLL-MARGIN for nav offset ════ */
-#about, #skills, #projects, #tao-close {
-  scroll-margin-top: 80px;
-}
-
-/* ════ 2. BREATHING KANJI ════ */
-.hero-kanji {
-  filter: url(#inkBreath);
-}
-
-/* ════ 3. PROJECT INK STAIN ════ */
-.project-row {
+.rail-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .4rem;
   position: relative;
-  overflow: hidden;
+  z-index: 1;
 }
-.project-row::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  /* radial ink bleed — origin set by JS on mouseenter */
-  background: radial-gradient(ellipse 80% 120% at var(--stain-x,50%) var(--stain-y,50%),
-    rgba(26,21,16,.055) 0%,
-    rgba(26,21,16,.022) 40%,
-    transparent 72%
-  );
-  opacity: 0;
-  transform: scale(.55);
-  transition: opacity .55s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1);
+.rn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .2rem;
+  text-decoration: none;
+  padding: .4rem 0;
+  position: relative;
+}
+.rn-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  border: 1px solid var(--jade-dim);
+  background: transparent;
+  transition: border-color .3s, background .3s, box-shadow .3s;
+}
+.rn.active .rn-dot {
+  background: var(--jade-glow);
+  border-color: var(--jade-glow);
+  box-shadow: 0 0 12px var(--jade-glow), 0 0 28px rgba(21,200,94,.3);
+}
+.rn-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: .42rem;
+  letter-spacing: .1em;
+  color: var(--jade-dim);
+  opacity: .5;
+  transition: opacity .3s, color .3s;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.rn.active .rn-lbl { color: var(--jade-mid); opacity: .9; }
+.rn:hover .rn-dot { border-color: var(--jade-mid); }
+.rn:hover .rn-lbl { opacity: .75; }
+.rail-rank {
+  font-family: 'Space Mono', monospace;
+  font-size: .44rem;
+  color: var(--jade-dim);
+  opacity: .4;
+  writing-mode: vertical-rl;
+  user-select: none;
+  margin-top: 1.8rem;
+  letter-spacing: .2em;
+}
+
+/* ── MAIN CONTENT OFFSET ─────────────────────────────────── */
+main { margin-left: 3.8rem; }
+
+/* ── HERO ───────────────────────────────────────────────── */
+#hero {
+  position: relative;
+  z-index: 10;
+  height: 100vh;
+  display: flex;
+  align-items: flex-end;
+  padding: 0 5rem 12vh;
   pointer-events: none;
 }
-.project-row:hover::before {
-  opacity: 1;
-  transform: scale(1);
+#hero > * { pointer-events: auto; }
+.hero-content {
+  clip-path: inset(50% 0 50% 0);
+  animation: apertureOpen 1.1s var(--ease) forwards .5s;
 }
-/* Ink spread line at top */
-.project-row::after {
+@keyframes apertureOpen {
+  to { clip-path: inset(0 0 0 0); }
+}
+.hero-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: .56rem;
+  letter-spacing: .45em;
+  color: var(--jade-mid);
+  margin-bottom: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+}
+.hero-tag::before {
+  content: '';
+  display: inline-block;
+  width: 1.5rem; height: 1px;
+  background: var(--jade-mid);
+  opacity: .5;
+}
+.hero-name {
+  display: flex;
+  flex-direction: column;
+  line-height: .88;
+  margin-bottom: 1.8rem;
+}
+.hn-a {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(4rem, 12vw, 9.5rem);
+  font-weight: 300;
+  color: rgba(208,221,208,.45);
+  letter-spacing: .03em;
+}
+.hn-b {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(4.8rem, 14vw, 11rem);
+  font-weight: 700;
+  color: var(--parchment);
+  letter-spacing: -.01em;
+  text-shadow: 0 0 80px rgba(21,200,94,.09);
+}
+.hero-craft {
+  font-family: 'EB Garamond', serif;
+  font-size: clamp(.85rem, 1.5vw, 1rem);
+  font-style: italic;
+  color: var(--text);
+  letter-spacing: .12em;
+  margin-bottom: 2.5rem;
+}
+.hero-scroll-indicator {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  opacity: .5;
+}
+.hsi-line {
+  width: 2.4rem; height: 1px;
+  background: var(--jade-mid);
+}
+.hsi-lbl {
+  font-family: 'Space Mono', monospace;
+  font-size: .48rem;
+  letter-spacing: .38em;
+  color: var(--jade-mid);
+  text-transform: uppercase;
+}
+
+/* ── SECTIONS BASE ───────────────────────────────────────── */
+.chapter {
+  position: relative;
+  z-index: 10;
+  padding: 8rem 5rem;
+  border-top: 1px solid var(--line);
+  background: rgba(1,7,10,.78);
+}
+.ch-inner { max-width: 1080px; margin: 0 auto; }
+
+/* Section head */
+.ch-head {
+  margin-bottom: 4rem;
+}
+.ch-rank {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .5em;
+  color: var(--jade-dim);
+  margin-bottom: .6rem;
+  opacity: .65;
+}
+.ch-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1.05;
+}
+.ch-title .em { color: var(--jade-glow); font-style: normal; font-weight: 300; }
+
+/* ── WIPE REVEAL ─────────────────────────────────────────── */
+.wipe {
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path .95s var(--ease);
+}
+.wipe.vis { clip-path: inset(0 0% 0 0); }
+.d1 { transition-delay: .1s; }
+.d2 { transition-delay: .25s; }
+.d3 { transition-delay: .42s; }
+.d4 { transition-delay: .6s; }
+.d5 { transition-delay: .8s; }
+.d6 { transition-delay: 1.0s; }
+
+/* ── APERTURE (ABOUT) ─────────────────────────────────────── */
+.ap-grid {
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 5rem;
+  align-items: start;
+}
+.ap-text p {
+  font-family: 'EB Garamond', serif;
+  font-size: clamp(.95rem, 1.5vw, 1.08rem);
+  line-height: 2.05;
+  color: var(--text-lit);
+  margin-bottom: 1.5rem;
+}
+.ap-text p em   { color: var(--parchment); font-style: normal; }
+.ap-text p i    { color: var(--jade-glow); font-style: italic; }
+.ap-annotation {
+  font-family: 'Space Mono', monospace;
+  font-size: .58rem;
+  color: var(--jade-dim);
+  border-left: 1px solid rgba(21,200,94,.25);
+  padding-left: .9rem;
+  margin-top: 2.5rem;
+  line-height: 1.95;
+  letter-spacing: .04em;
+}
+.ap-formation { display: flex; align-items: center; justify-content: center; }
+
+/* ── GU COLLECTION (SKILLS) ──────────────────────────────── */
+.gu-manifest {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.gu-path {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  border-top: 1px solid var(--line);
+  padding: 1.8rem 0;
+}
+.gu-path:last-child { border-bottom: 1px solid var(--line); }
+.gp-label {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding-right: 2rem;
+  align-self: start;
+  padding-top: .2rem;
+}
+.gp-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--jade-glow);
+  box-shadow: 0 0 10px var(--jade-glow), 0 0 20px rgba(21,200,94,.3);
+  flex-shrink: 0;
+}
+.gp-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--parchment);
+  line-height: 1.2;
+}
+.gp-domain {
+  font-family: 'Space Mono', monospace;
+  font-size: .46rem;
+  letter-spacing: .18em;
+  color: var(--jade-dim);
+  margin-top: .2rem;
+}
+.gp-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem .8rem;
+  align-items: center;
+}
+.gu-item {
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem;
+  letter-spacing: .12em;
+  color: var(--text);
+  padding: .3rem .7rem;
+  border: 1px solid rgba(21,200,94,.14);
+  transition: border-color .25s, color .25s, background .25s;
+  cursor: default;
+}
+.gu-item:hover {
+  border-color: rgba(21,200,94,.45);
+  color: var(--jade-glow);
+  background: rgba(21,200,94,.04);
+}
+
+/* ── FORMATIONS (PROJECTS) ───────────────────────────────── */
+.fm-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+.fm-card {
+  position: relative;
+  border: 1px solid rgba(21,200,94,.15);
+  padding: 2.2rem 2.2rem 2.2rem 5.8rem;
+  background: rgba(21,200,94,.015);
+  overflow: hidden;
+  transition: border-color .35s, background .35s;
+}
+.fm-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(to right, transparent, rgba(26,21,16,.2) var(--stain-x,50%), transparent);
+  left: 1.9rem; top: 50%;
+  transform: translateY(-50%);
+  width: 2.4rem; height: 2.4rem;
+  border-radius: 50%;
+  border: 1px solid rgba(21,200,94,.3);
+  transition: border-color .35s, box-shadow .35s;
+}
+.fm-card:hover {
+  border-color: rgba(21,200,94,.4);
+  background: rgba(21,200,94,.04);
+}
+.fm-card:hover::before {
+  border-color: rgba(21,200,94,.7);
+  box-shadow: 0 0 16px rgba(21,200,94,.2),
+              inset 0 0 10px rgba(21,200,94,.08);
+}
+.fm-num {
+  position: absolute;
+  left: 1.9rem; top: 50%;
+  transform: translateY(-50%);
+  width: 2.4rem;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: .7rem;
+  color: var(--jade-mid);
+  z-index: 1;
+  transition: color .3s;
+}
+.fm-card:hover .fm-num { color: var(--jade-glow); }
+.fm-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .7rem; }
+.fm-tag {
+  font-family: 'Space Mono', monospace;
+  font-size: .44rem;
+  letter-spacing: .14em;
+  color: var(--jade-dim);
+  padding: .18rem .5rem;
+  border: 1px solid rgba(21,200,94,.18);
+}
+.fm-tag.wip { color: var(--blood-lit); border-color: rgba(110,8,8,.4); }
+.fm-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.1rem, 2vw, 1.5rem);
+  font-weight: 600;
+  color: var(--parchment);
+  line-height: 1.2;
+  margin-bottom: .5rem;
+}
+.fm-desc {
+  font-family: 'EB Garamond', serif;
+  font-size: .95rem;
+  line-height: 1.75;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+.fm-link {
+  font-family: 'Space Mono', monospace;
+  font-size: .56rem;
+  letter-spacing: .16em;
+  color: var(--jade-dim);
+  text-decoration: none;
+  transition: color .25s;
+  display: inline-block;
+}
+.fm-link:hover { color: var(--jade-glow); }
+.fm-link.sealed { opacity: .3; cursor: default; pointer-events: none; }
+
+/* ── METHOD (CLOSING) ──────────────────────────────────── */
+#method .ch-inner {
+  max-width: 680px;
+  min-height: 50vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.method-verse {
+  font-family: 'EB Garamond', serif;
+  font-size: clamp(1.1rem, 1.9vw, 1.25rem);
+  font-style: italic;
+  line-height: 1.95;
+  color: var(--text-lit);
+  margin-bottom: 3rem;
+  border-left: 2px solid rgba(21,200,94,.25);
+  padding-left: 2rem;
+}
+.method-attr {
+  font-family: 'Space Mono', monospace;
+  font-size: .52rem;
+  letter-spacing: .38em;
+  color: var(--jade-dim);
+  margin-bottom: 3.5rem;
+  padding-left: 2rem;
+  opacity: .65;
+}
+.cultivate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .7rem;
+  font-family: 'Space Mono', monospace;
+  font-size: .6rem;
+  letter-spacing: .28em;
+  color: var(--void);
+  background: var(--jade-mid);
+  padding: .9rem 2.2rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background .25s, letter-spacing .3s var(--ease);
+}
+.cultivate-btn:hover { background: var(--jade-glow); letter-spacing: .38em; }
+
+/* ── FOOTER ──────────────────────────────────────────────── */
+footer {
+  position: relative;
+  z-index: 10;
+  margin-left: 3.8rem;
+  padding: 2.2rem 5rem;
+  border-top: 1px solid var(--line);
+  background: rgba(1,7,10,.9);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+#eye-seal {
+  font-size: .9rem;
+  color: var(--jade-dim);
+  cursor: pointer;
+  transition: color .25s, text-shadow .25s;
+  user-select: none;
+  opacity: .5;
+  font-family: 'EB Garamond', serif;
+}
+#eye-seal:hover {
+  color: var(--jade-glow);
+  text-shadow: 0 0 18px var(--jade-glow);
+  opacity: 1;
+}
+.ft-info {
+  display: flex;
+  align-items: center;
+  gap: 2.4rem;
+}
+.ft-name {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .28em;
+  color: var(--jade-dim);
+  opacity: .55;
+}
+.ft-link {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .22em;
+  color: var(--text);
+  text-decoration: none;
+  transition: color .25s;
+  text-transform: uppercase;
+}
+.ft-link:hover { color: var(--jade-glow); }
+
+/* ── EASTER EGG OVERLAY ──────────────────────────────────── */
+#ee {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(1,7,10,.97);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0;
-  transition: opacity .4s .1s ease;
+  pointer-events: none;
+  transition: opacity .5s var(--ease);
 }
-.project-row:hover::after { opacity: 1; }
-
-/* ════ 4. CURSOR HOVER STATE ════ */
-#cursorDot {
-  transition: width .18s ease, height .18s ease, background .18s ease, box-shadow .18s ease;
+#ee.open { opacity: 1; pointer-events: auto; }
+.ee-frame {
+  max-width: 580px;
+  padding: 3.5rem 4rem;
+  border: 1px solid rgba(21,200,94,.2);
+  position: relative;
+  text-align: center;
 }
-#cursorDot.on-link {
+.ee-frame::before,
+.ee-frame::after {
+  content: '';
+  position: absolute;
   width: 14px; height: 14px;
-  background: var(--vermillion);
-  box-shadow: 0 0 14px rgba(192,57,43,.5);
+  border-color: var(--jade-mid);
+  border-style: solid;
+  opacity: .4;
 }
+.ee-frame::before { top: 10px; left: 10px;  border-width: 1px 0 0 1px; }
+.ee-frame::after  { bottom: 10px; right: 10px; border-width: 0 1px 1px 0; }
+#ee-label {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .48em;
+  color: var(--jade-dim);
+  margin-bottom: 2rem;
+}
+#ee-text {
+  font-family: 'EB Garamond', serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  line-height: 1.9;
+  color: var(--parchment);
+  margin-bottom: 2rem;
+  min-height: 3em;
+}
+#ee-dismiss {
+  font-family: 'Space Mono', monospace;
+  font-size: .5rem;
+  letter-spacing: .3em;
+  color: var(--jade-dim);
+  cursor: pointer;
+  transition: color .2s;
+}
+#ee-dismiss:hover { color: var(--jade-glow); }
 
-/* ════ MOBILE ════ */
-@media (max-width:768px) {
-  nav { padding:1rem 1.2rem; }
-  .nav-links { display:none; }
-  .nav-hamburger { display:flex; }
-  .about-layout { grid-template-columns:1fr; gap:2.5rem; }
-  .about-kanji-col { flex-direction:row; justify-content:flex-start; }
-  .vertical-kanji { display:none; }
-  .project-row { grid-template-columns:1fr; gap:1rem; }
-  .project-num-cn { display:none; }
-  .skills-grid { grid-template-columns:1fr 1fr; }
-  footer { flex-direction:column; align-items:flex-start; }
-  .footer-right { align-items:flex-start; }
-  .scroll-chapter { padding:5rem 1.2rem; }
-  #tao-close { padding:6rem 1.2rem; }
-  .hero-cta-row { flex-direction:column; align-items:center; }
-  .btn-ink, .btn-ink-outline { width:100%; max-width:260px; text-align:center; }
+/* ── RESPONSIVE ──────────────────────────────────────────── */
+@media (max-width: 900px) {
+  #rail { display: none; }
+  main, footer { margin-left: 0; }
+  .chapter { padding: 5rem 1.8rem; }
+  #hero { padding: 0 1.8rem 10vh; }
+  .ap-grid { grid-template-columns: 1fr; }
+  .ap-formation { display: none; }
+  .fm-grid { grid-template-columns: 1fr; }
+  .gu-path { grid-template-columns: 1fr; gap: 1rem; }
 }
-@media (max-width:480px) {
-  .skills-grid { grid-template-columns:1fr; }
-  .hero-tao { font-size:.9rem; padding:0 .8rem; }
-  .chapter-title { font-size:1.7rem; }
+@media (max-width: 600px) {
+  .hn-a { font-size: 3.5rem; }
+  .hn-b { font-size: 4.2rem; }
+  footer { flex-direction: column; gap: 1rem; text-align: center; }
 }
 </style>
 </head>
 <body>
 
-<!-- SVG filters -->
-<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
-  <defs>
-    <filter id="inkBreath" x="-8%" y="-8%" width="116%" height="116%">
-      <feTurbulence
-        id="inkTurb"
-        type="fractalNoise"
-        baseFrequency="0.018 0.022"
-        numOctaves="3"
-        seed="2"
-        result="noise"/>
-      <feDisplacementMap
-        in="SourceGraphic"
-        in2="noise"
-        scale="4"
-        xChannelSelector="R"
-        yChannelSelector="G"
-        result="displaced"/>
-      <feComposite in="displaced" in2="SourceGraphic" operator="atop"/>
-    </filter>
-  </defs>
-</svg>
+<!-- THREE.JS CANVAS -->
+<canvas id="gl"></canvas>
 
-<div id="cursorDot"></div>
-<canvas id="trailCanvas"></canvas>
-<canvas id="bg-canvas"></canvas>
-<canvas id="bird-canvas"></canvas>
+<!-- CURSOR -->
+<div id="c-dot"></div>
+<div id="c-ring"></div>
 
-<!-- NAV -->
-<nav>
-  <div class="nav-seal"><span>暗</span></div>
-  <ul class="nav-links">
-    <li><a href="#about">Scroll I</a></li>
-    <li><a href="#skills">Scroll II</a></li>
-    <li><a href="#projects">Scroll III</a></li>
-    <li><a href="https://github.com/Darkstrike03" target="_blank">Codex</a></li>
-  </ul>
-  <div class="nav-hamburger" id="hamburger"><span></span><span></span><span></span></div>
-</nav>
-<div class="nav-mobile-menu" id="mobileMenu">
-  <span class="nav-close" id="menuClose">✕</span>
-  <a href="#about"    onclick="closeMobileMenu()">Scroll I — The Practitioner</a>
-  <a href="#skills"   onclick="closeMobileMenu()">Scroll II — The Arts</a>
-  <a href="#projects" onclick="closeMobileMenu()">Scroll III — The Worlds</a>
-  <a href="https://github.com/Darkstrike03" target="_blank" onclick="closeMobileMenu()">GitHub Codex</a>
-</div>
+<!-- LEFT RAIL -->
+<aside id="rail">
+  <span class="rail-brand">D · S</span>
+  <div class="rail-line"></div>
+  <nav class="rail-nav">
+    <a class="rn active" href="#hero" data-sec="hero">
+      <div class="rn-dot"></div>
+      <span class="rn-lbl">Origin</span>
+    </a>
+    <a class="rn" href="#aperture" data-sec="aperture">
+      <div class="rn-dot"></div>
+      <span class="rn-lbl">Aperture</span>
+    </a>
+    <a class="rn" href="#collection" data-sec="collection">
+      <div class="rn-dot"></div>
+      <span class="rn-lbl">Collection</span>
+    </a>
+    <a class="rn" href="#formations" data-sec="formations">
+      <div class="rn-dot"></div>
+      <span class="rn-lbl">Formations</span>
+    </a>
+    <a class="rn" href="#method" data-sec="method">
+      <div class="rn-dot"></div>
+      <span class="rn-lbl">Method</span>
+    </a>
+  </nav>
+  <div class="rail-line"></div>
+  <span class="rail-rank">蠱道</span>
+</aside>
 
-<!-- HERO -->
-<section id="hero">
-  <h1 class="hero-kanji idr">暗撃</h1>
-  <p class="hero-name-en idr">DarkStrike · Builder of Digital Worlds</p>
-  <blockquote class="hero-tao idr">
-    "The way that can be built is not true;<br>the world that can be constructed is not true."
-    <span class="hero-tao-src">— Tao Te Ching · 道德經</span>
-  </blockquote>
-  <p class="hero-sub idr">Full Stack · Design · Mobile · AI</p>
-  <div class="hero-cta-row idr">
-    <a href="#projects" class="btn-ink">Read the Scrolls</a>
-    <a href="https://github.com/Darkstrike03" target="_blank" class="btn-ink-outline">GitHub</a>
-  </div>
-  <div class="scroll-hint idr">
-    <span>Unroll</span>
-    <div class="scroll-line"></div>
-  </div>
-</section>
+<!-- MAIN -->
+<main>
 
-<!-- ABOUT -->
-<section id="about" class="scroll-chapter">
-  <div class="chapter-inner">
-    <div class="chapter-label idr">
-      <span class="chapter-label-cn">一</span>
-      <div class="chapter-label-line"></div>
-      <h2 class="chapter-title">The <em>Practitioner</em></h2>
-    </div>
-    <div class="about-layout">
-      <div class="about-kanji-col idr">
-        <div class="vertical-kanji">開発者設計者創造者</div>
-        <div class="seal-stamp"><span>匠</span></div>
-        <canvas id="painting-canvas" width="260" height="290" style="opacity:.78;margin-top:1.8rem;max-width:100%;"></canvas>
+  <!-- HERO -->
+  <section id="hero">
+    <div class="hero-content">
+      <p class="hero-tag">Rank Unknown &nbsp;·&nbsp; Path Unconstrained</p>
+      <h1 class="hero-name">
+        <span class="hn-a">DARK</span>
+        <span class="hn-b">STRIKE</span>
+      </h1>
+      <p class="hero-craft">Builder &nbsp;&middot;&nbsp; Cultivator of Code &nbsp;&middot;&nbsp; Pathmaker</p>
+      <div class="hero-scroll-indicator">
+        <div class="hsi-line"></div>
+        <span class="hsi-lbl">Open Aperture</span>
       </div>
-      <div class="about-text-col">
-        <p class="idr">A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.</p>
-        <p class="idr">Drawn to the deep wells of <i>webnovels</i> — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I build platforms as one builds a world: with hidden systems, layered lore, and spaces that breathe.</p>
-        <div class="tao-pull idr">
-          <p>"The way that can be built is not true;<br>the world that can be constructed is not true."</p>
+    </div>
+  </section>
+
+  <!-- APERTURE (ABOUT) -->
+  <section id="aperture" class="chapter">
+    <div class="ch-inner">
+      <div class="ch-head">
+        <p class="ch-rank wipe">Aperture · Rank I</p>
+        <h2 class="ch-title wipe d1">The <span class="em">Cultivator's</span> Scripture</h2>
+      </div>
+      <div class="ap-grid">
+        <div class="ap-text">
+          <p class="wipe d2">A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.</p>
+          <p class="wipe d3">Drawn to the deep wells of <i>webnovels</i> — Reverend Insanity, Lord of the Mysteries, Renegade Immortal — I build platforms as one builds a cultivation system: with hidden mechanics, layered architecture, and worlds that breathe.</p>
+          <p class="wipe d4">A true cultivator pursues the apex. Every project is a <em>Gu formation</em> — resources refined, methods applied, result achieved. No sentiment. No waste.</p>
+          <div class="ap-annotation wipe d5">
+            APERTURE STATUS &nbsp;·&nbsp; OPEN<br>
+            GU WORMS REFINED &nbsp;·&nbsp; ACTIVE<br>
+            PATH AFFINITY &nbsp;·&nbsp; MULTI-REALM<br>
+            OBJECTIVE &nbsp;·&nbsp; BUILD WORLDS
+          </div>
         </div>
-        <p class="idr">This is not contradiction — it is <em>compass</em>. Build anyway. Know it is incomplete. Then build deeper.</p>
+        <div class="ap-formation wipe d3">
+          <canvas id="fc" width="260" height="260"></canvas>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- SKILLS -->
-<section id="skills" class="scroll-chapter">
-  <div class="chapter-inner">
-    <div class="chapter-label idr">
-      <span class="chapter-label-cn">二</span>
-      <div class="chapter-label-line"></div>
-      <h2 class="chapter-title">The <em>Arts</em> Mastered</h2>
+  <!-- GU COLLECTION (SKILLS) -->
+  <section id="collection" class="chapter">
+    <div class="ch-inner">
+      <div class="ch-head">
+        <p class="ch-rank wipe">Gu Collection · Rank II</p>
+        <h2 class="ch-title wipe d1">Refined <span class="em">Arsenal</span></h2>
+      </div>
+      <div class="gu-manifest">
+        <div class="gu-path wipe d2">
+          <div class="gp-label">
+            <div class="gp-dot"></div>
+            <div>
+              <div class="gp-name">Vision</div>
+              <div class="gp-domain">Frontend Path</div>
+            </div>
+          </div>
+          <div class="gp-items">
+            <span class="gu-item">HTML</span>
+            <span class="gu-item">CSS</span>
+            <span class="gu-item">Tailwind</span>
+            <span class="gu-item">React</span>
+            <span class="gu-item">Next.js</span>
+            <span class="gu-item">Figma</span>
+            <span class="gu-item">Three.js</span>
+          </div>
+        </div>
+        <div class="gu-path wipe d3">
+          <div class="gp-label">
+            <div class="gp-dot"></div>
+            <div>
+              <div class="gp-name">Force</div>
+              <div class="gp-domain">Backend Path</div>
+            </div>
+          </div>
+          <div class="gp-items">
+            <span class="gu-item">Node.js</span>
+            <span class="gu-item">Express</span>
+            <span class="gu-item">Python</span>
+            <span class="gu-item">Java</span>
+            <span class="gu-item">MongoDB</span>
+            <span class="gu-item">Oracle</span>
+          </div>
+        </div>
+        <div class="gu-path wipe d4">
+          <div class="gp-label">
+            <div class="gp-dot"></div>
+            <div>
+              <div class="gp-name">Pursuit</div>
+              <div class="gp-domain">Mobile Path</div>
+            </div>
+          </div>
+          <div class="gp-items">
+            <span class="gu-item">Flutter</span>
+            <span class="gu-item">Dart</span>
+          </div>
+        </div>
+        <div class="gu-path wipe d5">
+          <div class="gp-label">
+            <div class="gp-dot"></div>
+            <div>
+              <div class="gp-name">Control</div>
+              <div class="gp-domain">Tools Path</div>
+            </div>
+          </div>
+          <div class="gp-items">
+            <span class="gu-item">Git</span>
+            <span class="gu-item">VS Code</span>
+            <span class="gu-item">Vercel</span>
+            <span class="gu-item">Netlify</span>
+            <span class="gu-item">GDScript</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="skills-grid">
-      <div class="skill-card idr"><div class="skill-card-title">筆 · Brushwork · Frontend</div><div class="skill-pills"><span class="skill-pill">HTML</span><span class="skill-pill">CSS</span><span class="skill-pill">Tailwind</span><span class="skill-pill">React</span><span class="skill-pill">Next.js</span><span class="skill-pill">Figma</span></div></div>
-      <div class="skill-card idr"><div class="skill-card-title">鉄 · Ironwork · Backend</div><div class="skill-pills"><span class="skill-pill">Node.js</span><span class="skill-pill">Express</span><span class="skill-pill">Python</span><span class="skill-pill">Java</span><span class="skill-pill">MongoDB</span><span class="skill-pill">Oracle</span></div></div>
-      <div class="skill-card idr"><div class="skill-card-title">風 · Wind · Mobile</div><div class="skill-pills"><span class="skill-pill">Flutter</span><span class="skill-pill">Dart</span></div></div>
-      <div class="skill-card idr"><div class="skill-card-title">道 · Path · Tools</div><div class="skill-pills"><span class="skill-pill">Git</span><span class="skill-pill">VS Code</span><span class="skill-pill">Vercel</span><span class="skill-pill">Netlify</span><span class="skill-pill">GDScript</span></div></div>
-    </div>
-  </div>
-</section>
+  </section>
 
-<!-- PROJECTS -->
-<section id="projects" class="scroll-chapter">
-  <div class="chapter-inner">
-    <div class="chapter-label idr">
-      <span class="chapter-label-cn">三</span>
-      <div class="chapter-label-line"></div>
-      <h2 class="chapter-title">Worlds <em>Constructed</em></h2>
-    </div>
-    <div class="projects-list">
-      <div class="project-row idr"><div class="project-num-cn">壱</div><div class="project-body"><div class="project-tags"><span class="project-tag">Platform · Full Stack</span></div><div class="project-title">Otaku's Library</div><p class="project-desc">A vast living archive — Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p><a href="https://www.otakuslibrary.com/" target="_blank" class="project-link">Visit →</a></div></div>
-      <div class="project-row idr"><div class="project-num-cn">弐</div><div class="project-body"><div class="project-tags"><span class="project-tag">App · Flutter · Dart</span><span class="project-tag">Web · Android · Windows</span></div><div class="project-title">Gensaku</div><p class="project-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows unified under a single vision.</p><a href="https://gensaku.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
-      <div class="project-row idr"><div class="project-num-cn">参</div><div class="project-body"><div class="project-tags"><span class="project-tag">Web · Gamified</span></div><div class="project-title">Localore</div><p class="project-desc">Folklore and mythological creatures from every culture, discovered through play. Knowledge as adventure — mythology made interactive.</p><a href="https://localore.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
-      <div class="project-row idr"><div class="project-num-cn">四</div><div class="project-body"><div class="project-tags"><span class="project-tag">Web · Utility</span></div><div class="project-title">Rocket Transfers</div><p class="project-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p><a href="https://rocket-transfers.vercel.app/" target="_blank" class="project-link">Visit →</a></div></div>
-      <div class="project-row idr"><div class="project-num-cn">五</div><div class="project-body"><div class="project-tags"><span class="project-tag wip">In Cultivation · AI</span></div><div class="project-title">Aetheria</div><p class="project-desc">An AI model constructed from scratch on Kaggle — neuron by neuron, epoch by epoch. A digital grimoire written in real time.</p><span style="font-family:'Cinzel',serif;font-size:.6rem;letter-spacing:.2em;color:var(--vermillion-dim);">Cultivating...</span></div></div>
-    </div>
-    <div class="graveyard-ink idr">
-      <p class="graveyard-label">— Worlds that returned to the Void —</p>
-      <div class="fallen-row"><span class="fallen-ink">Tralia · Connect Hidden Places</span><span class="fallen-ink">1Pulse · One Stop Medical App</span></div>
-    </div>
-  </div>
-</section>
+  <!-- FORMATIONS (PROJECTS) -->
+  <section id="formations" class="chapter">
+    <div class="ch-inner">
+      <div class="ch-head">
+        <p class="ch-rank wipe">Gu Formations · Rank III</p>
+        <h2 class="ch-title wipe d1">Sealed <span class="em">Domains</span></h2>
+      </div>
+      <div class="fm-grid">
 
-<!-- CLOSING TAO -->
-<section id="tao-close">
-  <div class="tao-bg-k"><span>山道</span></div>
-  <p class="tao-final idr">"The way that can be built is not true;<br>the world that can be constructed is not true.<br><br><span style="font-size:.85em;opacity:.65;">Yet here we are — building.</span>"</p>
-  <p class="tao-attr idr">道德經 · Tao Te Ching</p>
-</section>
+        <div class="fm-card wipe d2">
+          <div class="fm-num">I</div>
+          <div class="fm-tags"><span class="fm-tag">Platform · Full Stack</span></div>
+          <div class="fm-title">Otaku's Library</div>
+          <p class="fm-desc">A vast living archive — Anime, Manga, Manhwa, Webcomics, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p>
+          <a href="https://www.otakuslibrary.com/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
+        </div>
+
+        <div class="fm-card wipe d3">
+          <div class="fm-num">II</div>
+          <div class="fm-tags">
+            <span class="fm-tag">App · Flutter · Dart</span>
+            <span class="fm-tag">Web · Android · Windows</span>
+          </div>
+          <div class="fm-title">Gensaku</div>
+          <p class="fm-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows.</p>
+          <a href="https://gensaku.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
+        </div>
+
+        <div class="fm-card wipe d3">
+          <div class="fm-num">III</div>
+          <div class="fm-tags"><span class="fm-tag">Web · Gamified</span></div>
+          <div class="fm-title">Localore</div>
+          <p class="fm-desc">Folklore and mythological creatures from every culture, discovered through play. Mythology made interactive.</p>
+          <a href="https://localore.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
+        </div>
+
+        <div class="fm-card wipe d4">
+          <div class="fm-num">IV</div>
+          <div class="fm-tags"><span class="fm-tag">Web · Utility</span></div>
+          <div class="fm-title">Rocket Transfers</div>
+          <p class="fm-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p>
+          <a href="https://rocket-transfers.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
+        </div>
+
+        <div class="fm-card wipe d4">
+          <div class="fm-num">V</div>
+          <div class="fm-tags"><span class="fm-tag wip">Refining · AI</span></div>
+          <div class="fm-title">Aetheria</div>
+          <p class="fm-desc">An AI model constructed from scratch — neuron by neuron, epoch by epoch. A digital Gu being refined in real time.</p>
+          <span class="fm-link sealed">In Cultivation</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- METHOD (CLOSING) -->
+  <section id="method" class="chapter">
+    <div class="ch-inner">
+      <p class="ch-rank wipe">Method · Rank IV</p>
+      <h2 class="ch-title wipe d1" style="margin-bottom:3.5rem;">The <span class="em">Grand</span> Method</h2>
+      <blockquote class="method-verse wipe d2">
+        "Life is a journey full of calamity.<br>
+        Only by standing at the peak of the world<br>
+        can you protect yourself and not be swallowed<br>
+        by this brutal world."
+      </blockquote>
+      <p class="method-attr wipe d3">— Fang Yuan &nbsp;·&nbsp; Reverend Insanity</p>
+      <a href="https://github.com/Darkstrike03" target="_blank" rel="noopener"
+         class="cultivate-btn wipe d4">◉ &nbsp; Initiate Contact</a>
+    </div>
+  </section>
+
+</main>
 
 <!-- FOOTER -->
 <footer>
-  <div><div class="footer-seal-box"><span>暗</span></div><div class="footer-name">DarkStrike · 2025</div></div>
-  <div class="footer-right">
-    <div class="footer-links-row"><a href="https://github.com/Darkstrike03" target="_blank" class="footer-link">GitHub</a><a href="#hero" class="footer-link">Return ↑</a></div>
-    <p class="footer-copy">The scroll has no end. The way continues.</p>
+  <span id="eye-seal" title="三 more seals in the dark">蠱</span>
+  <div class="ft-info">
+    <span class="ft-name">DARKSTRIKE · 2025</span>
+    <a href="https://github.com/Darkstrike03" target="_blank" rel="noopener" class="ft-link">GitHub</a>
+    <a href="#hero" class="ft-link">Ascend ↑</a>
   </div>
 </footer>
 
+<!-- EASTER EGG OVERLAY -->
+<div id="ee">
+  <div class="ee-frame">
+    <p id="ee-label">SCRIPTURE REVEALED</p>
+    <p id="ee-text"></p>
+    <p id="ee-dismiss">[ Close &nbsp;·&nbsp; Esc ]</p>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
-// ══════════════════════════════════
-//  MOBILE NAV
-// ══════════════════════════════════
-document.getElementById('hamburger').onclick = () => document.getElementById('mobileMenu').classList.add('open');
-document.getElementById('menuClose').onclick  = closeMobileMenu;
-function closeMobileMenu(){ document.getElementById('mobileMenu').classList.remove('open'); }
+'use strict';
+// ══════════════════════════════════════════════════════════
+//  RI PORTFOLIO — DarkStrike
+//  "Heaven and earth have no love. Gu Masters have no mercy."
+// ══════════════════════════════════════════════════════════
 
-// ══════════════════════════════════
-//  CURSOR — dot + fluid canvas trail
-// ══════════════════════════════════
-const cursorDot = document.getElementById('cursorDot');
-const tc = document.getElementById('trailCanvas');
-const tctx = tc.getContext('2d');
-function resizeTC(){ tc.width=innerWidth; tc.height=innerHeight; }
-resizeTC(); window.addEventListener('resize', resizeTC);
-
-const HIST = 42;
-// Chain of lagged positions
-const chain = Array.from({length:HIST}, ()=>({x:-300,y:-300}));
-let mx=-300, my=-300;
-let cursorOnLink = false; // set by hover intent below
-
-document.addEventListener('mousemove', e=>{
-  mx=e.clientX; my=e.clientY;
-  cursorDot.style.left=mx+'px'; cursorDot.style.top=my+'px';
-});
-
-// Click: SVG ink splat
-document.addEventListener('click', e=>{
-  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
-  const s=55+Math.random()*50;
-  svg.setAttribute('width',s); svg.setAttribute('height',s*.8);
-  svg.style.cssText=`position:fixed;left:${e.clientX}px;top:${e.clientY}px;transform:translate(-50%,-50%) rotate(${Math.random()*30-15}deg);pointer-events:none;z-index:9990;`;
-  svg.innerHTML=`
-    <ellipse cx="${s*.5}" cy="${s*.4}" rx="${s*.36}" ry="${s*.26}" fill="rgba(26,21,16,.13)"/>
-    <ellipse cx="${s*.28}" cy="${s*.54}" rx="${s*.1}" ry="${s*.07}" fill="rgba(26,21,16,.08)"/>
-    <ellipse cx="${s*.74}" cy="${s*.36}" rx="${s*.08}" ry="${s*.05}" fill="rgba(26,21,16,.08)"/>
-    <ellipse cx="${s*.5}"  cy="${s*.7}"  rx="${s*.06}" ry="${s*.09}" fill="rgba(26,21,16,.07)"/>
-    <ellipse cx="${s*.2}"  cy="${s*.28}" rx="${s*.04}" ry="${s*.04}" fill="rgba(26,21,16,.06)"/>`;
-  document.body.appendChild(svg);
-  svg.classList.add('ink-splat-el');
-  setTimeout(()=>svg.remove(),1500);
-});
-
-(function loopTrail(){
-  requestAnimationFrame(loopTrail);
-
-  // Propagate chain: each point chases the one ahead of it
-  chain[0].x += (mx - chain[0].x) * .52;
-  chain[0].y += (my - chain[0].y) * .52;
-  for(let i=1;i<HIST;i++){
-    const lag = .38 - i*.007;
-    chain[i].x += (chain[i-1].x - chain[i].x) * Math.max(lag,.08);
-    chain[i].y += (chain[i-1].y - chain[i].y) * Math.max(lag,.08);
-  }
-
-  tctx.clearRect(0,0,tc.width,tc.height);
-  if(chain[0].x < 0) return;
-
-  // Draw as ONE continuous tapered stroke
-  tctx.beginPath();
-  tctx.moveTo(chain[0].x, chain[0].y);
-  for(let i=1;i<HIST-1;i++){
-    // Midpoint smoothing
-    const cx = (chain[i].x+chain[i+1].x)*.5;
-    const cy = (chain[i].y+chain[i+1].y)*.5;
-    tctx.quadraticCurveTo(chain[i].x, chain[i].y, cx, cy);
-  }
-
-  // Stroke with gradient: thick+opaque at head, thin+transparent at tail
-  const head = chain[0], tail = chain[HIST-1];
-  const headColor = cursorOnLink ? 'rgba(192,57,43,.65)' : 'rgba(26,21,16,.58)';
-  const midColor  = cursorOnLink ? 'rgba(160,40,25,.28)' : 'rgba(26,21,16,.32)';
-  const grad = tctx.createLinearGradient(head.x, head.y, tail.x, tail.y);
-  grad.addColorStop(0,   headColor);
-  grad.addColorStop(.3,  midColor);
-  grad.addColorStop(.65, 'rgba(26,21,16,.12)');
-  grad.addColorStop(1,   'rgba(26,21,16,0)');
-
-  tctx.strokeStyle = grad;
-  tctx.lineWidth   = 5;
-  tctx.lineCap     = 'round';
-  tctx.lineJoin    = 'round';
-  tctx.stroke();
-
-  // Second thinner pass for a wet-ink inner shine
-  tctx.beginPath();
-  tctx.moveTo(chain[0].x, chain[0].y);
-  for(let i=1;i<Math.floor(HIST*.6)-1;i++){
-    const cx=(chain[i].x+chain[i+1].x)*.5;
-    const cy=(chain[i].y+chain[i+1].y)*.5;
-    tctx.quadraticCurveTo(chain[i].x,chain[i].y,cx,cy);
-  }
-  const grad2=tctx.createLinearGradient(head.x,head.y,chain[Math.floor(HIST*.6)].x,chain[Math.floor(HIST*.6)].y);
-  grad2.addColorStop(0,'rgba(26,21,16,.22)');
-  grad2.addColorStop(1,'rgba(26,21,16,0)');
-  tctx.strokeStyle=grad2; tctx.lineWidth=2; tctx.stroke();
+// ── Console scripture ─────────────────────────────────────
+(function(){
+  const J = 'color:#15c85e;font-family:Space Mono,monospace;background:#01070a;';
+  const D = 'color:#708870;font-style:italic;background:#01070a;font-size:12px;';
+  const F = 'color:#083d1c;background:#01070a;font-size:11px;';
+  console.log('%c◉  GU MASTER\'S APERTURE  ◉',
+    J + 'font-size:14px;padding:8px 24px;letter-spacing:.25em;border:1px solid #0d3a1c;');
+  console.log('%c"Heaven and earth have no love. Gu Masters have no mercy."', D + 'padding:4px 12px;');
+  console.log('%c— Reverend Insanity · The Grand Gu World', F + 'padding:4px 12px;');
+  console.log('%cThree seals remain hidden in the page.', F + 'padding:4px 12px;');
 })();
 
-// ══════════════════════════════════
-//  THREE.JS BACKGROUND — fixed sun
-// ══════════════════════════════════
-const c3=document.getElementById('bg-canvas');
-const renderer=new THREE.WebGLRenderer({canvas:c3,antialias:true,alpha:true});
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-renderer.setSize(innerWidth,innerHeight);
-renderer.setClearColor(0,0);
-const sc3=new THREE.Scene(), cm3=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-const g3=new THREE.PlaneGeometry(2,2);
-const m3=new THREE.ShaderMaterial({
-  transparent:true,
-  uniforms:{
-    uT:{value:0}, uS:{value:0},
-    uM:{value:new THREE.Vector2(.5,.5)},
-    uR:{value:new THREE.Vector2(innerWidth,innerHeight)}
-  },
-  vertexShader:`void main(){gl_Position=vec4(position,1.);}`,
-  fragmentShader:`
-    uniform float uT,uS;
-    uniform vec2 uM,uR;
-    float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5);}
-    float noise(vec2 p){
-      vec2 i=floor(p),f=fract(p);
-      float a=hash(i),b=hash(i+vec2(1,0)),c=hash(i+vec2(0,1)),d=hash(i+vec2(1,1));
-      vec2 u=f*f*(3.-2.*f);
-      return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);
+// ════════════════════════════════════════════════════════
+//  THREE.JS SCENE
+// ════════════════════════════════════════════════════════
+const gc = document.getElementById('gl');
+let W = innerWidth, H = innerHeight;
+
+const renderer = new THREE.WebGLRenderer({ canvas: gc, antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.setClearColor(0x01070a, 1);
+
+const scene  = new THREE.Scene();
+scene.fog    = new THREE.FogExp2(0x01070a, 0.0006);
+
+const camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 900);
+camera.position.set(0, 0, 9);
+
+const ambL  = new THREE.AmbientLight(0x04120a, 2.2);
+const gL1   = new THREE.PointLight(0x0a4020, 2.8, 28);
+gL1.position.set(-4, 2, 2);
+scene.add(ambL, gL1);
+
+// ── Glow texture factory ──────────────────────────────────
+function mkGlow(r, g, b) {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const x = c.getContext('2d');
+  const gr = x.createRadialGradient(32,32,0, 32,32,32);
+  gr.addColorStop(0,   `rgba(${r},${g},${b},1)`);
+  gr.addColorStop(.3,  `rgba(${r},${g},${b},.65)`);
+  gr.addColorStop(.65, `rgba(${r},${g},${b},.2)`);
+  gr.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+  x.fillStyle = gr; x.fillRect(0,0,64,64);
+  return new THREE.CanvasTexture(c);
+}
+
+// ── FIREFLY GROUPS ────────────────────────────────────────
+// 5 groups × 12 fireflies each = 60 jade fireflies
+// 1 group × 14 = 14 gold fireflies
+const ffGroups = [];
+const FF_PER = 12;
+
+function makeFireflyGroup(count, texR, texG, texB, size, spread) {
+  const pos  = new Float32Array(count * 3);
+  const meta = { ox:[], oy:[], oz:[], sx:[], sy:[], sz:[], speed:[], ph:[], id: Date.now()+Math.random() };
+  for (let i = 0; i < count; i++) {
+    meta.ox.push((Math.random()-.5) * spread);
+    meta.oy.push((Math.random()-.5) * spread * .6);
+    meta.oz.push(-Math.random() * 8 - 1);
+    meta.sx.push(.22 + Math.random() * .85);
+    meta.sy.push(.14 + Math.random() * .55);
+    meta.sz.push(.12 + Math.random() * .38);
+    meta.speed.push(.12 + Math.random() * .22);
+    meta.ph.push(Math.random() * Math.PI * 2);
+    pos[i*3] = meta.ox[i]; pos[i*3+1] = meta.oy[i]; pos[i*3+2] = meta.oz[i];
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({
+    map: mkGlow(texR, texG, texB),
+    size, transparent: true, opacity: .55,
+    blending: THREE.AdditiveBlending, depthWrite: false,
+    sizeAttenuation: true
+  });
+  const pts = new THREE.Points(geo, mat);
+  scene.add(pts);
+  return { pts, geo, pos, mat, meta, count };
+}
+
+// 5 offset jade groups
+const jadePhases = [0, 1.2, 2.5, 3.8, 5.0];
+for (let g = 0; g < 5; g++) {
+  ffGroups.push(makeFireflyGroup(FF_PER, 21, 200, 94, .14 + g*.008, 18));
+}
+// Gold firefly group
+ffGroups.push(makeFireflyGroup(14, 228, 190, 60, .12, 14));
+
+function updateFireflies(t) {
+  ffGroups.forEach((grp, gi) => {
+    const ph = jadePhases[gi] || 0;
+    const opBase  = gi < 5 ? .45 : .38;
+    const opRange = .3;
+    grp.mat.opacity = opBase + Math.sin(t * 1.8 + ph) * opRange;
+    for (let i = 0; i < grp.count; i++) {
+      const s = grp.meta.speed[i], p = grp.meta.ph[i];
+      grp.pos[i*3]   = grp.meta.ox[i] + Math.sin(t * s       + p)       * grp.meta.sx[i];
+      grp.pos[i*3+1] = grp.meta.oy[i] + Math.sin(t * s * .73 + p + 1.5) * grp.meta.sy[i]
+                                       + Math.sin(t * .38 + i)   * .12; // gentle bob
+      grp.pos[i*3+2] = grp.meta.oz[i] + Math.cos(t * s * .55 + p)       * grp.meta.sz[i];
     }
-    float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*noise(p);p*=2.1;a*=.5;}return v;}
+    grp.geo.attributes.position.needsUpdate = true;
+  });
+}
 
-    // Mountain with per-layer horizontal parallax + vertical parallax
-    float mtn(vec2 uv, float off, float h, float r, float vShift){
-      return h + fbm(vec2(uv.x*r + off, uT*.018))*.22 - (uv.y - vShift);
+// ── GU WORM LINES ─────────────────────────────────────────
+const WORM_N = 16, WORM_SEG = 12;
+const worms = [];
+
+for (let w = 0; w < WORM_N; w++) {
+  const pos = new Float32Array(WORM_SEG * 3);
+  // Seed segment positions
+  const bx = (Math.random()-.5) * 16;
+  const by = (Math.random()-.5) * 10;
+  const bz = -Math.random() * 6 - 1;
+  for (let s = 0; s < WORM_SEG; s++) {
+    pos[s*3] = bx + (Math.random()-.5) * .5;
+    pos[s*3+1] = by + (Math.random()-.5) * .5;
+    pos[s*3+2] = bz;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const bright = .22 + Math.random() * .38;
+  const mat = new THREE.LineBasicMaterial({
+    color: new THREE.Color(0, bright, bright * .45),
+    transparent: true,
+    opacity: .22 + Math.random() * .28
+  });
+  const line = new THREE.Line(geo, mat);
+  scene.add(line);
+  worms.push({
+    line, geo, pos,
+    params: {
+      fx: .04 + Math.random() * .08,
+      fy: .03 + Math.random() * .07,
+      fz: .02 + Math.random() * .05,
+      rx: 2.5 + Math.random() * 4,
+      ry: 1.5 + Math.random() * 3,
+      rz: .8  + Math.random() * 1.6,
+      ox: Math.random() * Math.PI * 2,
+      oy: Math.random() * Math.PI * 2,
+      oz: Math.random() * Math.PI * 2,
+      t: Math.random() * Math.PI * 2
     }
+  });
+}
 
-    void main(){
-      vec2 uv=gl_FragCoord.xy/uR; uv.y=1.-uv.y;
-      float asp=uR.x/uR.y;
+function lerp(a, b, alpha) { return a + (b - a) * alpha; }
 
-      // Scroll-based parallax amounts per layer
-      float sBase = uS * 0.00022;
-      float sFar  = uS * 0.00006;   // far mountains barely move
-      float sMid  = uS * 0.00014;   // mid mountains move moderately
-      float sNear = uS * 0.00026;   // near mountains move most
-      // Vertical shift — horizon slowly rises as you scroll
-      float vFar  = uS * 0.00004;
-      float vMid  = uS * 0.00010;
-      float vNear = uS * 0.00018;
-
-      vec3 paper=vec3(.961,.945,.91);
-      vec3 sky=mix(vec3(.93,.908,.878),paper,smoothstep(0.,.7,uv.y));
-      // mist band
-      float mY=.52+sin(uT*.07)*.015+fbm(vec2(uv.x*1.2,uT*.035))*.05;
-      float mb=1.-smoothstep(0.,.28,abs(uv.y-mY));
-
-      // Mountains — each with independent parallax
-      float f1=mtn(uv, 3.6 + sFar,  .56, 2.0, -vFar);
-      float f2=mtn(uv, 1.1 + sMid,  .44, 3.0, -vMid);
-      float f3=mtn(uv, 0.0 + sNear, .30, 4.2, -vNear);
-      float fa=smoothstep(0.,.012,f1)*.1;
-      float ma=smoothstep(0.,.015,f2)*.2;
-      float na=smoothstep(0.,.018,f3)*.42;
-
-      // water
-      float wR=fbm(vec2(uv.x*9.,uT*.35))*.012;
-      float wA=smoothstep(0.,.07,-(uv.y-.17+wR))*.05;
-
-      // RED SUN — aspect-corrected
-      vec2 sc=vec2(.5+uM.x*.012,.195-uM.y*.007);
-      vec2 sd=(uv-sc)*vec2(asp,1.);
-      float sR=.044;
-      float sDist=length(sd);
-      float sun=smoothstep(sR+.004,sR-.004,sDist);
-      float glow=smoothstep(sR*3.5,sR,sDist)*.055;
-      vec3 sunC=vec3(.76,.23,.14);
-
-      // compose
-      vec3 col=sky;
-      col=mix(col,vec3(.94,.924,.9),mb*.55);
-      col=mix(col,vec3(.73,.71,.68),fa);
-      col=mix(col,vec3(.44,.41,.37),ma);
-      col=mix(col,vec3(.18,.15,.12),na);
-      col=mix(col,mix(col,vec3(.78,.87,.92),1.),wA);
-      col+=glow*sunC;
-      col=mix(col,sunC,sun);
-      float vig=smoothstep(0.,1.3,length((uv-.5)*vec2(1.,1.3)));
-      col=mix(col,paper*.91,vig*.28);
-      float eb=smoothstep(.95,1.,uv.x)+smoothstep(.05,0.,uv.x);
-      col=mix(col,vec3(.18,.15,.12),eb*.055);
-      col+=(hash(uv*uR*.5+uT*.1)-.5)*.01;
-      gl_FragColor=vec4(clamp(col,0.,1.),.93);
+function updateWorms(dt) {
+  worms.forEach(w => {
+    const p = w.params;
+    p.t += dt;
+    // New head position along parametric path
+    const hx = Math.sin(p.t * p.fx + p.ox) * p.rx;
+    const hy = Math.cos(p.t * p.fy + p.oy) * p.ry;
+    const hz = Math.sin(p.t * p.fz + p.oz) * p.rz - 3.5;
+    // Shift segments (each lags toward the one before it)
+    for (let s = WORM_SEG-1; s > 0; s--) {
+      w.pos[s*3]   = lerp(w.pos[s*3],   w.pos[(s-1)*3],   .18);
+      w.pos[s*3+1] = lerp(w.pos[s*3+1], w.pos[(s-1)*3+1], .18);
+      w.pos[s*3+2] = lerp(w.pos[s*3+2], w.pos[(s-1)*3+2], .18);
     }
-  `
-});
-sc3.add(new THREE.Mesh(g3,m3));
-let scrY=0,tMX=.5,tMY=.5,cMX=.5,cMY=.5;
-window.addEventListener('scroll',()=>scrY=scrollY);
-document.addEventListener('mousemove',e=>{tMX=e.clientX/innerWidth;tMY=e.clientY/innerHeight;});
-let t3=0;
-(function loopBg(){
-  requestAnimationFrame(loopBg); t3+=.016;
-  cMX+=(tMX-cMX)*.04; cMY+=(tMY-cMY)*.04;
-  m3.uniforms.uT.value=t3; m3.uniforms.uS.value=scrY;
-  m3.uniforms.uM.value.set(cMX,cMY);
-  renderer.render(sc3,cm3);
-})();
-window.addEventListener('resize',()=>{
-  renderer.setSize(innerWidth,innerHeight);
-  m3.uniforms.uR.value.set(innerWidth,innerHeight);
-});
+    w.pos[0] = hx; w.pos[1] = hy; w.pos[2] = hz;
+    w.geo.attributes.position.needsUpdate = true;
+  });
+}
 
-// ══════════════════════════════════
-//  BIRDS
-// ══════════════════════════════════
-const bc=document.getElementById('bird-canvas');
-const bctx=bc.getContext('2d');
-bc.width=innerWidth; bc.height=innerHeight;
-window.addEventListener('resize',()=>{bc.width=innerWidth;bc.height=innerHeight;});
-function drawBird(ctx,x,y,sz,fl){
-  ctx.save(); ctx.translate(x,y);
-  const w=Math.sin(fl)*sz*.65;
+// ── SPRING AUTUMN CICADA ──────────────────────────────────
+(function buildCicada(){
+  const CW = 480, CH = 320;
+  const cc = document.createElement('canvas');
+  cc.width = CW; cc.height = CH;
+  const ctx = cc.getContext('2d');
+  const CX = CW/2, CY = CH/2 + 12;
+
+  // Overall aura
+  const aura = ctx.createRadialGradient(CX, CY, 5, CX, CY, 185);
+  aura.addColorStop(0,   'rgba(200,150,30,.24)');
+  aura.addColorStop(.45, 'rgba(140,100,20,.08)');
+  aura.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = aura; ctx.fillRect(0, 0, CW, CH);
+
+  // Wing helper
+  function drawWing(pts, grad, alpha, stroke) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i + 1 < pts.length; i += 2) {
+      ctx.quadraticCurveTo(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]);
+    }
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.strokeStyle = stroke; ctx.lineWidth = .85; ctx.stroke();
+    ctx.restore();
+  }
+
+  // Left upper wing
+  const lg1 = ctx.createLinearGradient(CX-200, CY-80, CX-10, CY+10);
+  lg1.addColorStop(0, 'rgba(170,120,28,.55)'); lg1.addColorStop(1, 'rgba(230,185,58,.22)');
+  drawWing([
+    [CX-16, CY-28],
+    [CX-65, CY-95], [CX-185, CY-72],
+    [CX-210, CY-8], [CX-170, CY+40],
+    [CX-55, CY+20], [CX-14, CY+6]
+  ], lg1, .4, 'rgba(234,189,76,.38)');
+
+  // Right upper wing
+  const lg2 = ctx.createLinearGradient(CX+10, CY+10, CX+200, CY-80);
+  lg2.addColorStop(0, 'rgba(230,185,58,.22)'); lg2.addColorStop(1, 'rgba(170,120,28,.55)');
+  drawWing([
+    [CX+16, CY-28],
+    [CX+65, CY-95], [CX+185, CY-72],
+    [CX+210, CY-8], [CX+170, CY+40],
+    [CX+55, CY+20], [CX+14, CY+6]
+  ], lg2, .4, 'rgba(234,189,76,.38)');
+
+  // Left lower wing
+  ctx.save(); ctx.globalAlpha = .28;
   ctx.beginPath();
-  ctx.moveTo(-sz,w*.25);
-  ctx.quadraticCurveTo(-sz*.45,-w,0,0);
-  ctx.quadraticCurveTo(sz*.45,-w,sz,w*.25);
-  ctx.strokeStyle='rgba(26,21,16,.48)';
-  ctx.lineWidth=sz*.17; ctx.lineCap='round'; ctx.stroke();
+  ctx.moveTo(CX-14, CY+6);
+  ctx.quadraticCurveTo(CX-55, CY+20, CX-130, CY+65);
+  ctx.quadraticCurveTo(CX-110, CY+105, CX-45, CY+78);
+  ctx.quadraticCurveTo(CX-20, CY+55, CX-10, CY+36);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(196,150,32,.55)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(234,189,76,.3)'; ctx.lineWidth = .7; ctx.stroke();
   ctx.restore();
+
+  // Right lower wing
+  ctx.save(); ctx.globalAlpha = .28;
+  ctx.beginPath();
+  ctx.moveTo(CX+14, CY+6);
+  ctx.quadraticCurveTo(CX+55, CY+20, CX+130, CY+65);
+  ctx.quadraticCurveTo(CX+110, CY+105, CX+45, CY+78);
+  ctx.quadraticCurveTo(CX+20, CY+55, CX+10, CY+36);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(196,150,32,.55)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(234,189,76,.3)'; ctx.lineWidth = .7; ctx.stroke();
+  ctx.restore();
+
+  // Body
+  const bodyG = ctx.createLinearGradient(CX-13, CY-58, CX+13, CY+58);
+  bodyG.addColorStop(0, '#eabf50'); bodyG.addColorStop(.45, '#c4921a');
+  bodyG.addColorStop(.8, '#96720e'); bodyG.addColorStop(1, '#5c440a');
+  ctx.beginPath(); ctx.ellipse(CX, CY, 13, 58, 0, 0, Math.PI*2);
+  ctx.fillStyle = bodyG; ctx.fill();
+  ctx.strokeStyle = 'rgba(234,189,76,.65)'; ctx.lineWidth = .9; ctx.stroke();
+
+  // Abdominal segments
+  for (let i = 0; i < 7; i++) {
+    ctx.beginPath(); ctx.ellipse(CX, CY-24+i*13.5, 11-i*.4, 6.5, 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(234,189,76,.28)'; ctx.lineWidth = .6; ctx.stroke();
+  }
+
+  // Head
+  ctx.beginPath(); ctx.ellipse(CX, CY-64, 9.5, 10, 0, 0, Math.PI*2);
+  ctx.fillStyle = '#c4921a'; ctx.fill();
+  ctx.strokeStyle = 'rgba(234,189,76,.8)'; ctx.lineWidth = 1; ctx.stroke();
+
+  // Eyes (glowing jade — Spring Autumn sees through time)
+  [-6, 6].forEach(ex => {
+    const eg = ctx.createRadialGradient(CX+ex, CY-67, 0, CX+ex, CY-67, 5);
+    eg.addColorStop(0, 'rgba(21,200,94,.95)');
+    eg.addColorStop(.5,'rgba(14,140,65,.55)');
+    eg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(CX+ex, CY-67, 4.5, 0, Math.PI*2);
+    ctx.fillStyle = eg; ctx.fill();
+  });
+
+  // Wing veins (left)
+  [[CX-16,CY-12],[CX-72,CY-44],[CX-155,CY-36]],
+  [[CX-16,CY+2], [CX-68,CY+4], [CX-125,CY+18]],
+  [[CX-20,CY-22],[CX-105,CY-62],[CX-188,CY-50]]
+  ;  // Rewrite as explicit loops
+  const lVeins = [
+    [[CX-16,CY-12],[CX-72,CY-44],[CX-155,CY-36]],
+    [[CX-16,CY+2], [CX-68,CY+4], [CX-125,CY+18]],
+    [[CX-20,CY-22],[CX-105,CY-62],[CX-188,CY-50]]
+  ];
+  const rVeins = [
+    [[CX+16,CY-12],[CX+72,CY-44],[CX+155,CY-36]],
+    [[CX+16,CY+2], [CX+68,CY+4], [CX+125,CY+18]],
+    [[CX+20,CY-22],[CX+105,CY-62],[CX+188,CY-50]]
+  ];
+  [...lVeins, ...rVeins].forEach(pts => {
+    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+    ctx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
+    ctx.strokeStyle = 'rgba(234,189,76,.2)'; ctx.lineWidth = .55; ctx.stroke();
+  });
+
+  // Antennae
+  ctx.beginPath(); ctx.moveTo(CX-6, CY-72);
+  ctx.quadraticCurveTo(CX-35, CY-100, CX-62, CY-88);
+  ctx.strokeStyle = 'rgba(234,189,76,.45)'; ctx.lineWidth = .7; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(CX+6, CY-72);
+  ctx.quadraticCurveTo(CX+35, CY-100, CX+62, CY-88);
+  ctx.strokeStyle = 'rgba(234,189,76,.45)'; ctx.lineWidth = .7; ctx.stroke();
+
+  const tex = new THREE.CanvasTexture(cc);
+  const cicada = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.2, 2.8, 24, 12),
+    new THREE.ShaderMaterial({
+      uniforms: {
+        uMap:     { value: tex },
+        uTime:    { value: 0.0 },
+        uOpacity: { value: 0.88 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        uniform float uTime;
+        void main() {
+          vec3 pos = position;
+          float wx = abs(pos.x) / 2.1;
+          pos.z += sin(uTime * 7.0 + pos.x * 2.5) * wx * wx * 0.20;
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+        }
+      `,
+      fragmentShader: `
+        varying vec2 vUv;
+        uniform sampler2D uMap;
+        uniform float uOpacity;
+        void main() {
+          vec4 col = texture2D(uMap, vUv);
+          col.a *= uOpacity;
+          gl_FragColor = col;
+        }
+      `,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    })
+  );
+  cicada.position.set(0, .5, -2);
+  scene.add(cicada);
+  window._cicada = cicada;
+
+  // Cicada glow sprite
+  const glowC = document.createElement('canvas');
+  glowC.width = glowC.height = 128;
+  const gx = glowC.getContext('2d');
+  const gg = gx.createRadialGradient(64,64,0, 64,64,64);
+  gg.addColorStop(0, 'rgba(200,155,40,.45)');
+  gg.addColorStop(.5,'rgba(160,120,30,.12)');
+  gg.addColorStop(1, 'rgba(0,0,0,0)');
+  gx.fillStyle = gg; gx.fillRect(0,0,128,128);
+  const gSp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: new THREE.CanvasTexture(glowC),
+    transparent: true, blending: THREE.AdditiveBlending
+  }));
+  gSp.scale.set(6.5, 4.5, 1);
+  gSp.position.set(0, .5, -2.1);
+  scene.add(gSp);
+  window._cicadaGlow = gSp;
+})();
+
+// ── BACKGROUND FORMATION RING ─────────────────────────────
+const torusMesh = new THREE.Mesh(
+  new THREE.TorusGeometry(4.2, .018, 6, 120),
+  new THREE.MeshBasicMaterial({ color: 0x0a3d1c, transparent: true, opacity: .35 })
+);
+torusMesh.position.z = -6;
+scene.add(torusMesh);
+// 6 formation nodes on torus
+for (let i = 0; i < 6; i++) {
+  const a = i * Math.PI / 3;
+  const nd = new THREE.Mesh(
+    new THREE.SphereGeometry(.055, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x12c050 })
+  );
+  nd.position.set(Math.cos(a)*4.2, Math.sin(a)*4.2, -6);
+  scene.add(nd);
 }
-const birds=Array.from({length:16},(_,i)=>({
-  x:-100-i*45-Math.random()*80,
-  y:55+Math.random()*140+(i%4)*25,
-  spd:.22+Math.random()*.22,
-  sz:4.5+Math.random()*5,
-  fl:Math.random()*Math.PI*2,
-  flSpd:.036+Math.random()*.028,
-  drift:(Math.random()-.5)*.35
-}));
-(function loopBirds(){
-  requestAnimationFrame(loopBirds);
-  bctx.clearRect(0,0,bc.width,bc.height);
-  birds.forEach(b=>{
-    b.x+=b.spd; b.y+=b.drift*.18; b.fl+=b.flSpd;
-    if(b.x>bc.width+100){b.x=-100-Math.random()*120;b.y=45+Math.random()*180;}
-    if(b.y<bc.height*.45) drawBird(bctx,b.x,b.y,b.sz,b.fl);
+
+// ════════════════════════════════════════════════════════
+//  SCROLL & MOUSE STATE
+// ════════════════════════════════════════════════════════
+let scrollY = 0, scrollP = 0;
+const mouse = { x: 0, y: 0, ex: 0, ey: 0 };
+let cdX = W/2, cdY = H/2;
+
+window.addEventListener('mousemove', e => {
+  mouse.ex = (e.clientX / W - .5) * 2;
+  mouse.ey = (e.clientY / H - .5) * 2;
+  cdX = e.clientX; cdY = e.clientY;
+  cDot.style.left = cdX + 'px'; cDot.style.top = cdY + 'px';
+});
+
+window.addEventListener('scroll', () => {
+  scrollY = window.scrollY;
+  scrollP = scrollY / Math.max(1, document.body.scrollHeight - H);
+  document.querySelectorAll('.chapter').forEach(s => {
+    const r = s.getBoundingClientRect();
+    if (r.top <= H * .5 && r.bottom > 0) {
+      document.querySelectorAll('.rn').forEach(n =>
+        n.classList.toggle('active', n.dataset.sec === s.id));
+    }
+  });
+  if (scrollY < 100) {
+    document.querySelector('.rn[data-sec="hero"]').classList.add('active');
+    document.querySelectorAll('.rn:not([data-sec="hero"])').forEach(n => n.classList.remove('active'));
+  }
+  // Pan cicada out on scroll
+  if (window._cicada) {
+    const heroH = document.getElementById('hero').offsetHeight || H;
+    const op = Math.max(0, 1 - scrollY / (heroH * .68));
+    window._cicada.material.uniforms.uOpacity.value = op * .88;
+    if (window._cicadaGlow) window._cicadaGlow.material.opacity = op * .75;
+    window._cicada.position.z = -2 - scrollY * .004;
+  }
+}, { passive: true });
+
+// Rail nav click
+document.querySelectorAll('.rn').forEach(n =>
+  n.addEventListener('click', e => {
+    e.preventDefault();
+    document.getElementById(n.dataset.sec)?.scrollIntoView({ behavior: 'smooth' });
+  })
+);
+
+// ════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ════════════════════════════════════════════════════════
+let prevT = performance.now();
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  const dt  = Math.min((now - prevT) * .001, .05);
+  prevT = now;
+  const t = now * .001;
+
+  // Smooth mouse
+  mouse.x += (mouse.ex - mouse.x) * .04;
+  mouse.y += (mouse.ey - mouse.y) * .04;
+
+  // Camera parallax
+  camera.position.x += (mouse.x * .55 - camera.position.x) * .028;
+  camera.position.y += (-mouse.y * .38 - camera.position.y) * .028;
+
+  // Fog density
+  scene.fog.density = .0006 + scrollP * .00055;
+
+  // Formation torus rotation
+  torusMesh.rotation.z = t * .065;
+
+  // Cicada float
+  if (window._cicada) {
+    window._cicada.material.uniforms.uTime.value = t;
+    window._cicada.rotation.y = Math.sin(t * .25) * .06 + mouse.x * .032;
+    window._cicada.rotation.x = mouse.y * .022;
+    window._cicada.position.y = .5 + Math.sin(t * .38) * .1;
+    if (window._cicadaGlow) {
+      window._cicadaGlow.position.copy(window._cicada.position);
+      window._cicadaGlow.position.z -= .1;
+    }
+  }
+
+  // Fireflies
+  updateFireflies(t);
+
+  // Worms
+  updateWorms(dt * 0.85);
+
+  renderer.render(scene, camera);
+}
+const cDot  = document.getElementById('c-dot');
+const cRing = document.getElementById('c-ring');
+animate();
+
+// Resize
+window.addEventListener('resize', () => {
+  W = innerWidth; H = innerHeight;
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  camera.aspect = W / H;
+  camera.updateProjectionMatrix();
+});
+
+// ════════════════════════════════════════════════════════
+//  CURSOR
+// ════════════════════════════════════════════════════════
+let crX = W/2, crY = H/2;
+
+(function ringLoop(){
+  requestAnimationFrame(ringLoop);
+  crX += (cdX - crX) * .12;
+  crY += (cdY - crY) * .12;
+  cRing.style.left = crX + 'px';
+  cRing.style.top  = crY + 'px';
+})();
+
+document.querySelectorAll('a, button, .fm-card, .gu-item, .rn, #eye-seal, .hero-tag').forEach(el => {
+  el.addEventListener('mouseenter', () => cDot.classList.add('grow'));
+  el.addEventListener('mouseleave', () => cDot.classList.remove('grow'));
+});
+
+// Cicada hover detection via raycasting
+if (window._cicada) {
+  const ray = new THREE.Raycaster();
+  const ptr = new THREE.Vector2();
+  window.addEventListener('mousemove', () => {
+    ptr.x =  (cdX / W) * 2 - 1;
+    ptr.y = -(cdY / H) * 2 + 1;
+    ray.setFromCamera(ptr, camera);
+    cDot.classList.toggle('gold', ray.intersectObject(window._cicada).length > 0);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  WIPE REVEAL
+// ════════════════════════════════════════════════════════
+(function(){
+  if (!window.IntersectionObserver) {
+    document.querySelectorAll('.wipe').forEach(el => el.classList.add('vis'));
+    return;
+  }
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
+  }, { threshold: 0, rootMargin: '0px 0px 120px 0px' });
+  document.querySelectorAll('.wipe').forEach(el => obs.observe(el));
+})();
+
+// ════════════════════════════════════════════════════════
+//  FORMATION CANVAS (about section)
+// ════════════════════════════════════════════════════════
+(function(){
+  const fc = document.getElementById('fc');
+  if (!fc) return;
+  const fx = fc.getContext('2d');
+  const FW = 260, FH = 260, FCX = 130, FCY = 130;
+  let fT = 0;
+  const HEX_R = 108, INNER_R = 52;
+  const hexV = [], innerV = [];
+  for (let i = 0; i < 6; i++) {
+    const a = i * Math.PI / 3 - Math.PI/2;
+    hexV.push([FCX + Math.cos(a)*HEX_R, FCY + Math.sin(a)*HEX_R]);
+  }
+  function drawFormation() {
+    requestAnimationFrame(drawFormation);
+    fT += .006;
+    fx.clearRect(0, 0, FW, FH);
+
+    // Outer hex
+    fx.beginPath();
+    fx.moveTo(hexV[0][0], hexV[0][1]);
+    hexV.slice(1).forEach(([x,y]) => fx.lineTo(x,y));
+    fx.closePath();
+    fx.strokeStyle = 'rgba(21,200,94,.18)'; fx.lineWidth = 1; fx.stroke();
+
+    // Spokes
+    hexV.forEach(([x,y]) => {
+      fx.beginPath(); fx.moveTo(x, y); fx.lineTo(FCX, FCY);
+      fx.strokeStyle = 'rgba(21,200,94,.09)'; fx.lineWidth = .65; fx.stroke();
+    });
+
+    // Rotating inner hex
+    fx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = fT * .35 + i * Math.PI / 3;
+      const [rx, ry] = [FCX + Math.cos(a)*INNER_R, FCY + Math.sin(a)*INNER_R];
+      i === 0 ? fx.moveTo(rx, ry) : fx.lineTo(rx, ry);
+    }
+    fx.closePath();
+    fx.strokeStyle = 'rgba(21,200,94,.16)'; fx.lineWidth = .75; fx.stroke();
+
+    // Energy pulses along outer hex
+    for (let i = 0; i < 6; i++) {
+      const prog = ((fT * .7 + i * (1/6)) % 1);
+      const nxt  = (i + 1) % 6;
+      const px   = hexV[i][0] + (hexV[nxt][0] - hexV[i][0]) * prog;
+      const py   = hexV[i][1] + (hexV[nxt][1] - hexV[i][1]) * prog;
+      const eg = fx.createRadialGradient(px, py, 0, px, py, 9);
+      eg.addColorStop(0, 'rgba(21,200,94,.85)');
+      eg.addColorStop(1, 'rgba(21,200,94,0)');
+      fx.fillStyle = eg;
+      fx.beginPath(); fx.arc(px, py, 9, 0, Math.PI*2); fx.fill();
+    }
+
+    // Vertex nodes
+    hexV.forEach(([x,y], i) => {
+      const bright = .35 + .3 * Math.sin(fT * 1.4 + i);
+      fx.beginPath(); fx.arc(x, y, 3.5, 0, Math.PI*2);
+      fx.fillStyle = `rgba(21,200,94,${bright})`; fx.fill();
+    });
+
+    // 22 pathway dots (outer ring - 22 pathways in the Gu world)
+    for (let i = 0; i < 22; i++) {
+      const a   = fT * .05 + i * Math.PI * 2 / 22;
+      const dot = .1 + .3 * Math.pow(Math.sin(fT * 2.4 + i * .8) * .5 + .5, 2);
+      fx.beginPath(); fx.arc(FCX + Math.cos(a)*122, FCY + Math.sin(a)*122, 1.8, 0, Math.PI*2);
+      fx.fillStyle = `rgba(21,200,94,${dot})`; fx.fill();
+    }
+
+    // Center core glow
+    const cg = fx.createRadialGradient(FCX, FCY, 0, FCX, FCY, 18);
+    cg.addColorStop(0, `rgba(21,200,94,${.6 + Math.sin(fT*3)*.18})`);
+    cg.addColorStop(.45,'rgba(21,200,94,.18)');
+    cg.addColorStop(1, 'rgba(21,200,94,0)');
+    fx.fillStyle = cg; fx.beginPath(); fx.arc(FCX, FCY, 18, 0, Math.PI*2); fx.fill();
+    fx.beginPath(); fx.arc(FCX, FCY, 5, 0, Math.PI*2);
+    fx.fillStyle = `rgba(21,200,94,${.8 + Math.sin(fT*3)*.15})`; fx.fill();
+  }
+  drawFormation();
+})();
+
+// ════════════════════════════════════════════════════════
+//  EASTER EGGS
+// ════════════════════════════════════════════════════════
+const eeEl  = document.getElementById('ee');
+const eeTxt = document.getElementById('ee-text');
+const eeHdr = document.getElementById('ee-label');
+
+function openSeal(header, text) {
+  eeHdr.textContent = header;
+  eeTxt.textContent = '';
+  eeEl.classList.add('open');
+  let i = 0;
+  const iv = setInterval(() => {
+    eeTxt.textContent += text[i++];
+    if (i >= text.length) clearInterval(iv);
+  }, 20);
+}
+function closeSeal() { eeEl.classList.remove('open'); }
+
+document.getElementById('ee-dismiss').addEventListener('click', closeSeal);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSeal(); });
+
+// Seal 1 — Click the cicada (raycasting click)
+(function(){
+  const r = new THREE.Raycaster();
+  const p = new THREE.Vector2();
+  window.addEventListener('click', e => {
+    if (!window._cicada || eeEl.classList.contains('open')) return;
+    p.x =  (e.clientX / W) * 2 - 1;
+    p.y = -(e.clientY / H) * 2 + 1;
+    r.setFromCamera(p, camera);
+    if (r.intersectObject(window._cicada).length > 0) {
+      openSeal(
+        '◉  FIRST SEAL  ·  SPRING AUTUMN CICADA  ◉',
+        '"I am a demon. I pursue my own interests. In this world, only I am eternally reliable."'
+      );
+    }
   });
 })();
 
-// ══════════════════════════════════
-//  MINI PAINTING (about)
-// ══════════════════════════════════
-const pc=document.getElementById('painting-canvas');
-if(pc){
-  const pctx=pc.getContext('2d');
-  const PW=260,PH=290;
-  function mtnP(pts,alpha,blur){
-    pctx.save();
-    if(blur)pctx.filter=`blur(${blur}px)`;
-    pctx.beginPath(); pctx.moveTo(pts[0][0],pts[0][1]);
-    for(let i=1;i<pts.length;i++)pctx.lineTo(pts[i][0],pts[i][1]);
-    pctx.closePath(); pctx.fillStyle=`rgba(30,25,18,${alpha})`; pctx.fill();
-    pctx.filter='none'; pctx.restore();
-  }
-  function treeP(x,y,h){
-    pctx.save(); pctx.translate(x,y);
-    pctx.beginPath(); pctx.moveTo(0,0); pctx.lineTo(0,-h);
-    pctx.strokeStyle='rgba(30,25,18,.55)'; pctx.lineWidth=1.2; pctx.stroke();
-    for(let i=0;i<5;i++){const by=-h*(.3+i*.14),bx=(i%2?1:-1)*(7+Math.random()*4);pctx.beginPath();pctx.moveTo(0,by);pctx.lineTo(bx,by-5);pctx.strokeStyle='rgba(30,25,18,.28)';pctx.lineWidth=.8;pctx.stroke();}
-    pctx.restore();
-  }
-  let pT=0;
-  (function paint(){
-    requestAnimationFrame(paint); pT+=.01;
-    pctx.clearRect(0,0,PW,PH);
-    const sky=pctx.createLinearGradient(0,0,0,PH*.65);
-    sky.addColorStop(0,'rgba(215,205,190,.07)'); sky.addColorStop(1,'rgba(200,190,175,0)');
-    pctx.fillStyle=sky; pctx.fillRect(0,0,PW,PH);
-    mtnP([[15,PH*.62],[55,PH*.33],[90,PH*.45],[145,PH*.28],[195,PH*.38],[245,PH*.6],[PW,PH*.62]],.07,4);
-    mtnP([[0,PH*.62],[35,PH*.42],[72,PH*.31],[122,PH*.36],[165,PH*.26],[215,PH*.35],[PW,PH*.6]],.18,2);
-    mtnP([[0,PH*.68],[25,PH*.5],[62,PH*.38],[105,PH*.46],[140,PH*.34],[185,PH*.45],[225,PH*.4],[PW,PH*.67],[PW,PH],[0,PH]],.42,0);
-    const mistA=.42+Math.sin(pT)*.08;
-    const mist=pctx.createLinearGradient(0,PH*.52,0,PH*.7);
-    mist.addColorStop(0,'rgba(244,239,228,0)'); mist.addColorStop(.5,`rgba(244,239,228,${mistA})`); mist.addColorStop(1,'rgba(244,239,228,0)');
-    pctx.fillStyle=mist; pctx.fillRect(0,PH*.52,PW,PH*.22);
-    pctx.fillStyle='rgba(175,188,198,.09)'; pctx.fillRect(0,PH*.71,PW,PH*.29);
-    for(let i=0;i<5;i++){const ry=PH*.75+i*9+Math.sin(pT+i)*.8;pctx.beginPath();pctx.moveTo(8+i*4,ry);pctx.bezierCurveTo(70,ry-1.5,150,ry+2,210,ry-.5);pctx.strokeStyle='rgba(80,75,65,.065)';pctx.lineWidth=.8;pctx.stroke();}
-    pctx.beginPath(); pctx.arc(PW*.55,PH*.19,19,0,Math.PI*2);
-    pctx.fillStyle='rgba(188,58,44,.72)'; pctx.fill();
-    const bx=PW*.32+Math.sin(pT*.4)*.8;
-    pctx.save(); pctx.translate(bx,PH*.74);
-    pctx.beginPath(); pctx.moveTo(-18,0); pctx.quadraticCurveTo(0,7,18,0);
-    pctx.strokeStyle='rgba(30,25,18,.68)'; pctx.lineWidth=1.5; pctx.stroke();
-    pctx.beginPath(); pctx.moveTo(4,0); pctx.lineTo(4,-20);
-    pctx.strokeStyle='rgba(30,25,18,.55)'; pctx.lineWidth=1; pctx.stroke();
-    pctx.beginPath(); pctx.arc(4,-22,2.5,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,.6)'; pctx.fill();
-    pctx.restore();
-    treeP(35,PH*.71,32); treeP(25,PH*.72,25); treeP(47,PH*.73,18);
-    pctx.save(); pctx.translate(200,PH*.73);
-    pctx.beginPath(); pctx.ellipse(0,-4,14,7,0,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,.5)'; pctx.fill();
-    for(let i=-9;i<=9;i+=7){pctx.beginPath();pctx.moveTo(i,-1);pctx.lineTo(i+1,8);pctx.strokeStyle='rgba(30,25,18,.46)';pctx.lineWidth=1.8;pctx.stroke();}
-    pctx.beginPath(); pctx.ellipse(12,-6,5,4,.4,0,Math.PI*2);
-    pctx.fillStyle='rgba(30,25,18,.5)'; pctx.fill();
-    pctx.restore();
-  })();
-}
-
-// ══════════════════════════════════
-//  2. PROJECT INK STAIN
-// ══════════════════════════════════
-document.querySelectorAll('.project-row').forEach(row => {
-  row.addEventListener('mousemove', e => {
-    const rect = row.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1) + '%';
-    const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1) + '%';
-    row.style.setProperty('--stain-x', x);
-    row.style.setProperty('--stain-y', y);
+// Seal 2 — Hover hero-tag for 2.8 seconds
+(function(){
+  const el = document.querySelector('.hero-tag');
+  if (!el) return;
+  let timer;
+  el.addEventListener('mouseenter', () => {
+    timer = setTimeout(() => openSeal(
+      '◉  SECOND SEAL  ·  THE FIVE HUNDRED YEAR PLAN  ◉',
+      '"Life is a journey full of calamity. Only by standing at the peak of the world can you protect yourself and not be swallowed by this brutal world."'
+    ), 2800);
   });
-});
+  el.addEventListener('mouseleave', () => clearTimeout(timer));
+})();
 
-// ══════════════════════════════════
-//  3. BREATHING KANJI
-// ══════════════════════════════════
-const inkTurb = document.getElementById('inkTurb');
-if (inkTurb) {
-  const dispMap = inkTurb.parentElement.querySelector('feDisplacementMap');
-  let bT = 0;
-  (function breathe() {
-    requestAnimationFrame(breathe);
-    bT += 0.008;
-    const bfX = (0.014 + Math.sin(bT * 0.7)  * 0.006).toFixed(4);
-    const bfY = (0.018 + Math.sin(bT * 0.5 + 1.2) * 0.005).toFixed(4);
-    inkTurb.setAttribute('baseFrequency', `${bfX} ${bfY}`);
-    dispMap.setAttribute('scale', (3.5 + Math.sin(bT * 0.9) * 1.8).toFixed(2));
-  })();
-}
-
-// ══════════════════════════════════
-//  4. CURSOR HOVER INTENT
-// ══════════════════════════════════
-document.querySelectorAll('a, button, .skill-pill, .project-row, .nav-hamburger').forEach(el => {
-  el.addEventListener('mouseenter', () => { cursorDot.classList.add('on-link');    cursorOnLink = true;  });
-  el.addEventListener('mouseleave', () => { cursorDot.classList.remove('on-link'); cursorOnLink = false; });
-});
-
-// ══════════════════════════════════
-//  INK DROP REVEAL
-// ══════════════════════════════════
-// Hero — staggered ink drops on load
-document.querySelectorAll('#hero .idr').forEach((el,i)=>{
-  el.style.setProperty('--dx','50%');
-  el.style.setProperty('--dy','20%');
-  setTimeout(()=>el.classList.add('revealed'), 150+i*260);
-});
-
-// All other sections — trigger on scroll
-const obsTargets=document.querySelectorAll('section:not(#hero) .idr');
-const idrObs=new IntersectionObserver(entries=>{
-  entries.forEach(e=>{
-    if(!e.isIntersecting) return;
-    const el=e.target;
-    el.style.setProperty('--dx',(30+Math.random()*40)+'%');
-    el.style.setProperty('--dy',(5+Math.random()*25)+'%');
-    setTimeout(()=>el.classList.add('revealed'), Math.random()*120);
-    idrObs.unobserve(el);
+// Seal 3 — Eye seal triple-click
+(function(){
+  let n = 0, timer;
+  document.getElementById('eye-seal')?.addEventListener('click', () => {
+    n++; clearTimeout(timer);
+    if (n >= 3) {
+      openSeal(
+        '◉  THIRD SEAL  ·  THE GUARDIAN\'S BURDEN  ◉',
+        '"Although being capable of knowing a little about fate, one remains helpless towards fate; therefore, one might as well use a smiling face to hide all the pain, sorrow, confusion, and depression."'
+      );
+      n = 0;
+    } else {
+      timer = setTimeout(() => n = 0, 1600);
+    }
   });
-},{threshold:.08});
-obsTargets.forEach(el=>idrObs.observe(el));
+})();
+
+// Seal 4 — Konami
+(function(){
+  const seq = [38,38,40,40,37,39,37,39,66,65];
+  let p = 0;
+  document.addEventListener('keydown', e => {
+    if (e.keyCode === seq[p]) {
+      if (++p === seq.length) {
+        openSeal(
+          '◉  HIDDEN SEAL  ·  HEAVEN AND EARTH  ◉',
+          '"Heaven and earth have no love. Gu Masters have no mercy. This Venerable only has himself in his heart."'
+        );
+        p = 0;
+      }
+    } else p = 0;
+  });
+})();
 </script>
 </body>
 </html>
