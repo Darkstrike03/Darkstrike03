@@ -1,6 +1,6 @@
 # 🌌 Darkstrike 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&pause=1000&color=A970FF&center=true&vCenter=true&width=435&lines=Building+Otaku's+Library;Crafting+Gensaku+Studio;Mastering+Cross-Platform+Apps;Exploring+the+Digital+Cosmos" alt="Typing SVG" />
+  <img src="assets/bad-apple-ascii.gif" alt="Bad Apple ASCII Animation" width="435" />
 </p>
 
 ---
