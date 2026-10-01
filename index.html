@@ -1,1601 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DarkStrike · Gu Cultivator · Builder of Worlds</title>
-<!--
-  ╔══════════════════════════════════════════════════════════╗
-  ║  SOURCE SCRIPTURE — READ BY THE WORTHY                   ║
-  ║                                                          ║
-  ║  "All living beings are Gu,                              ║
-  ║   heaven and earth is a furnace,                         ║
-  ║   fate is the fire that never stops burning."            ║
-  ║                                                          ║
-  ║  — Reverend Insanity, Chapter 1                          ║
-  ║                                                          ║
-  ║  Three seals remain hidden in the dark.                  ║
-  ║  The cicada knows the way. Follow its glow.              ║
-  ╚══════════════════════════════════════════════════════════╝
--->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DarkStrike — 墨 Ink Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=IM+Fell+DW+Pica:ital@0;1&family=Cinzel:wght@300;400;600&family=Noto+Serif:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet"/>
+<!-- Landscape style inspired by Shan Shui Inf by Lingdong Huang (MIT) — https://github.com/LingDong-/shan-shui-inf
+     Generators here are written fresh (periodic ridged contours, hatch strokes, sparse trees, boats), not copied.
+     If you paste original repo code in later, keep its LICENSE text alongside it. -->
 <style>
-/* ════════════════════════════════════════
-   VARIABLES
-════════════════════════════════════════ */
-:root {
-  --void:       #01070a;
-  --cave:       #020b07;
-  --deep:       #040e08;
-  --surface:    #071209;
-  --jade:       #0b4d25;
-  --jade-glow:  #15c85e;
-  --jade-mid:   #0d7a38;
-  --jade-dim:   #083d1c;
-  --jade-faint: rgba(21,200,94,.04);
-  --gold:       #c49020;
-  --gold-glow:  #e8be4c;
-  --gold-dim:   #7a5c14;
-  --blood:      #6e0808;
-  --blood-lit:  #aa1010;
-  --text:       #708870;
-  --text-lit:   #a8bca8;
-  --parchment:  #d0ddd0;
-  --line:       rgba(21,200,94,.09);
-  --ease:       cubic-bezier(.22,.61,.36,1);
-}
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body {
-  background: var(--void);
-  color: var(--text);
-  font-family: 'EB Garamond', serif;
-  overflow-x: hidden;
-  cursor: none;
-}
-::selection { background: rgba(21,200,94,.22); color: var(--parchment); }
-
-/* ── CURSOR ─────────────────────────────────────────────── */
-#c-dot {
-  position: fixed;
-  width: 9px; height: 9px;
-  border: 1px solid rgba(21,200,94,.75);
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%,-50%);
-  z-index: 9999;
-  transition: width .18s var(--ease), height .18s var(--ease),
-              border-color .18s, opacity .18s;
-}
-#c-dot.grow { width: 26px; height: 26px; opacity: .5; }
-#c-dot.gold { border-color: rgba(228,190,76,.9); }
-#c-ring {
-  position: fixed;
-  width: 22px; height: 22px;
-  border: 1px solid rgba(21,200,94,.18);
-  border-radius: 50%;
-  pointer-events: none;
-  transform: translate(-50%,-50%);
-  z-index: 9998;
-}
-
-/* ── THREE.JS CANVAS ───────────────────────────────────── */
-#gl { position: fixed; inset: 0; z-index: 0; display: block; }
-
-/* ── LEFT RAIL ──────────────────────────────────────────── */
-#rail {
-  position: fixed;
-  left: 0; top: 0; bottom: 0;
-  width: 3.8rem;
-  z-index: 400;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 2rem 0;
-  border-right: 1px solid var(--line);
-  background: rgba(1,7,10,.6);
-  backdrop-filter: blur(8px);
-}
-.rail-brand {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .22em;
-  color: var(--jade-mid);
-  writing-mode: vertical-rl;
-  user-select: none;
-  opacity: .55;
-  margin-bottom: 2rem;
-}
-.rail-line {
-  flex: 1;
-  width: 1px;
-  background: linear-gradient(to bottom,
-    transparent, rgba(21,200,94,.2) 20%, rgba(21,200,94,.2) 80%, transparent);
-}
-.rail-nav {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .4rem;
-  position: relative;
-  z-index: 1;
-}
-.rn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .2rem;
-  text-decoration: none;
-  padding: .4rem 0;
-  position: relative;
-}
-.rn-dot {
-  width: 5px; height: 5px;
-  border-radius: 50%;
-  border: 1px solid var(--jade-dim);
-  background: transparent;
-  transition: border-color .3s, background .3s, box-shadow .3s;
-}
-.rn.active .rn-dot {
-  background: var(--jade-glow);
-  border-color: var(--jade-glow);
-  box-shadow: 0 0 12px var(--jade-glow), 0 0 28px rgba(21,200,94,.3);
-}
-.rn-lbl {
-  font-family: 'Space Mono', monospace;
-  font-size: .42rem;
-  letter-spacing: .1em;
-  color: var(--jade-dim);
-  opacity: .5;
-  transition: opacity .3s, color .3s;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
-}
-.rn.active .rn-lbl { color: var(--jade-mid); opacity: .9; }
-.rn:hover .rn-dot { border-color: var(--jade-mid); }
-.rn:hover .rn-lbl { opacity: .75; }
-.rail-rank {
-  font-family: 'Space Mono', monospace;
-  font-size: .44rem;
-  color: var(--jade-dim);
-  opacity: .4;
-  writing-mode: vertical-rl;
-  user-select: none;
-  margin-top: 1.8rem;
-  letter-spacing: .2em;
-}
-
-/* ── MAIN CONTENT OFFSET ─────────────────────────────────── */
-main { margin-left: 3.8rem; }
-
-/* ── HERO ───────────────────────────────────────────────── */
-#hero {
-  position: relative;
-  z-index: 10;
-  height: 100vh;
-  display: flex;
-  align-items: flex-end;
-  padding: 0 5rem 12vh;
-  pointer-events: none;
-}
-#hero > * { pointer-events: auto; }
-.hero-content {
-  clip-path: inset(50% 0 50% 0);
-  animation: apertureOpen 1.1s var(--ease) forwards .5s;
-}
-@keyframes apertureOpen {
-  to { clip-path: inset(0 0 0 0); }
-}
-.hero-tag {
-  font-family: 'Space Mono', monospace;
-  font-size: .56rem;
-  letter-spacing: .45em;
-  color: var(--jade-mid);
-  margin-bottom: 1.4rem;
-  display: flex;
-  align-items: center;
-  gap: .8rem;
-}
-.hero-tag::before {
-  content: '';
-  display: inline-block;
-  width: 1.5rem; height: 1px;
-  background: var(--jade-mid);
-  opacity: .5;
-}
-.hero-name {
-  display: flex;
-  flex-direction: column;
-  line-height: .88;
-  margin-bottom: 1.8rem;
-}
-.hn-a {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(4rem, 12vw, 9.5rem);
-  font-weight: 300;
-  color: rgba(208,221,208,.45);
-  letter-spacing: .03em;
-}
-.hn-b {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(4.8rem, 14vw, 11rem);
-  font-weight: 700;
-  color: var(--parchment);
-  letter-spacing: -.01em;
-  text-shadow: 0 0 80px rgba(21,200,94,.09);
-}
-.hero-craft {
-  font-family: 'EB Garamond', serif;
-  font-size: clamp(.85rem, 1.5vw, 1rem);
-  font-style: italic;
-  color: var(--text);
-  letter-spacing: .12em;
-  margin-bottom: 2.5rem;
-}
-.hero-scroll-indicator {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  opacity: .5;
-}
-.hsi-line {
-  width: 2.4rem; height: 1px;
-  background: var(--jade-mid);
-}
-.hsi-lbl {
-  font-family: 'Space Mono', monospace;
-  font-size: .48rem;
-  letter-spacing: .38em;
-  color: var(--jade-mid);
-  text-transform: uppercase;
-}
-
-/* ── SECTIONS BASE ───────────────────────────────────────── */
-.chapter {
-  position: relative;
-  z-index: 10;
-  padding: 8rem 5rem;
-  border-top: 1px solid var(--line);
-  background: rgba(1,7,10,.78);
-}
-.ch-inner { max-width: 1080px; margin: 0 auto; }
-
-/* Section head */
-.ch-head {
-  margin-bottom: 4rem;
-}
-.ch-rank {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .5em;
-  color: var(--jade-dim);
-  margin-bottom: .6rem;
-  opacity: .65;
-}
-.ch-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(2rem, 5vw, 3.6rem);
-  font-weight: 700;
-  color: var(--parchment);
-  line-height: 1.05;
-}
-.ch-title .em { color: var(--jade-glow); font-style: normal; font-weight: 300; }
-
-/* ── WIPE REVEAL ─────────────────────────────────────────── */
-.wipe {
-  clip-path: inset(0 100% 0 0);
-  transition: clip-path .95s var(--ease);
-}
-.wipe.vis { clip-path: inset(0 0% 0 0); }
-.d1 { transition-delay: .1s; }
-.d2 { transition-delay: .25s; }
-.d3 { transition-delay: .42s; }
-.d4 { transition-delay: .6s; }
-.d5 { transition-delay: .8s; }
-.d6 { transition-delay: 1.0s; }
-
-/* ── APERTURE (ABOUT) ─────────────────────────────────────── */
-.ap-grid {
-  display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: 5rem;
-  align-items: start;
-}
-.ap-text p {
-  font-family: 'EB Garamond', serif;
-  font-size: clamp(.95rem, 1.5vw, 1.08rem);
-  line-height: 2.05;
-  color: var(--text-lit);
-  margin-bottom: 1.5rem;
-}
-.ap-text p em   { color: var(--parchment); font-style: normal; }
-.ap-text p i    { color: var(--jade-glow); font-style: italic; }
-.ap-annotation {
-  font-family: 'Space Mono', monospace;
-  font-size: .58rem;
-  color: var(--jade-dim);
-  border-left: 1px solid rgba(21,200,94,.25);
-  padding-left: .9rem;
-  margin-top: 2.5rem;
-  line-height: 1.95;
-  letter-spacing: .04em;
-}
-.ap-formation { display: flex; align-items: center; justify-content: center; }
-
-/* ── GU COLLECTION (SKILLS) ──────────────────────────────── */
-.gu-manifest {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.gu-path {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  border-top: 1px solid var(--line);
-  padding: 1.8rem 0;
-}
-.gu-path:last-child { border-bottom: 1px solid var(--line); }
-.gp-label {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  padding-right: 2rem;
-  align-self: start;
-  padding-top: .2rem;
-}
-.gp-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--jade-glow);
-  box-shadow: 0 0 10px var(--jade-glow), 0 0 20px rgba(21,200,94,.3);
-  flex-shrink: 0;
-}
-.gp-name {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--parchment);
-  line-height: 1.2;
-}
-.gp-domain {
-  font-family: 'Space Mono', monospace;
-  font-size: .46rem;
-  letter-spacing: .18em;
-  color: var(--jade-dim);
-  margin-top: .2rem;
-}
-.gp-items {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem .8rem;
-  align-items: center;
-}
-.gu-item {
-  font-family: 'Space Mono', monospace;
-  font-size: .6rem;
-  letter-spacing: .12em;
-  color: var(--text);
-  padding: .3rem .7rem;
-  border: 1px solid rgba(21,200,94,.14);
-  transition: border-color .25s, color .25s, background .25s;
-  cursor: default;
-}
-.gu-item:hover {
-  border-color: rgba(21,200,94,.45);
-  color: var(--jade-glow);
-  background: rgba(21,200,94,.04);
-}
-
-/* ── FORMATIONS (PROJECTS) ───────────────────────────────── */
-.fm-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-.fm-card {
-  position: relative;
-  border: 1px solid rgba(21,200,94,.15);
-  padding: 2.2rem 2.2rem 2.2rem 5.8rem;
-  background: rgba(21,200,94,.015);
-  overflow: hidden;
-  transition: border-color .35s, background .35s;
-}
-.fm-card::before {
-  content: '';
-  position: absolute;
-  left: 1.9rem; top: 50%;
-  transform: translateY(-50%);
-  width: 2.4rem; height: 2.4rem;
-  border-radius: 50%;
-  border: 1px solid rgba(21,200,94,.3);
-  transition: border-color .35s, box-shadow .35s;
-}
-.fm-card:hover {
-  border-color: rgba(21,200,94,.4);
-  background: rgba(21,200,94,.04);
-}
-.fm-card:hover::before {
-  border-color: rgba(21,200,94,.7);
-  box-shadow: 0 0 16px rgba(21,200,94,.2),
-              inset 0 0 10px rgba(21,200,94,.08);
-}
-.fm-num {
-  position: absolute;
-  left: 1.9rem; top: 50%;
-  transform: translateY(-50%);
-  width: 2.4rem;
-  text-align: center;
-  font-family: 'Space Mono', monospace;
-  font-size: .7rem;
-  color: var(--jade-mid);
-  z-index: 1;
-  transition: color .3s;
-}
-.fm-card:hover .fm-num { color: var(--jade-glow); }
-.fm-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-bottom: .7rem; }
-.fm-tag {
-  font-family: 'Space Mono', monospace;
-  font-size: .44rem;
-  letter-spacing: .14em;
-  color: var(--jade-dim);
-  padding: .18rem .5rem;
-  border: 1px solid rgba(21,200,94,.18);
-}
-.fm-tag.wip { color: var(--blood-lit); border-color: rgba(110,8,8,.4); }
-.fm-title {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: clamp(1.1rem, 2vw, 1.5rem);
-  font-weight: 600;
-  color: var(--parchment);
-  line-height: 1.2;
-  margin-bottom: .5rem;
-}
-.fm-desc {
-  font-family: 'EB Garamond', serif;
-  font-size: .95rem;
-  line-height: 1.75;
-  color: var(--text);
-  margin-bottom: 1rem;
-}
-.fm-link {
-  font-family: 'Space Mono', monospace;
-  font-size: .56rem;
-  letter-spacing: .16em;
-  color: var(--jade-dim);
-  text-decoration: none;
-  transition: color .25s;
-  display: inline-block;
-}
-.fm-link:hover { color: var(--jade-glow); }
-.fm-link.sealed { opacity: .3; cursor: default; pointer-events: none; }
-
-/* ── METHOD (CLOSING) ──────────────────────────────────── */
-#method .ch-inner {
-  max-width: 680px;
-  min-height: 50vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-.method-verse {
-  font-family: 'EB Garamond', serif;
-  font-size: clamp(1.1rem, 1.9vw, 1.25rem);
-  font-style: italic;
-  line-height: 1.95;
-  color: var(--text-lit);
-  margin-bottom: 3rem;
-  border-left: 2px solid rgba(21,200,94,.25);
-  padding-left: 2rem;
-}
-.method-attr {
-  font-family: 'Space Mono', monospace;
-  font-size: .52rem;
-  letter-spacing: .38em;
-  color: var(--jade-dim);
-  margin-bottom: 3.5rem;
-  padding-left: 2rem;
-  opacity: .65;
-}
-.cultivate-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: .7rem;
-  font-family: 'Space Mono', monospace;
-  font-size: .6rem;
-  letter-spacing: .28em;
-  color: var(--void);
-  background: var(--jade-mid);
-  padding: .9rem 2.2rem;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: background .25s, letter-spacing .3s var(--ease);
-}
-.cultivate-btn:hover { background: var(--jade-glow); letter-spacing: .38em; }
-
-/* ── FOOTER ──────────────────────────────────────────────── */
-footer {
-  position: relative;
-  z-index: 10;
-  margin-left: 3.8rem;
-  padding: 2.2rem 5rem;
-  border-top: 1px solid var(--line);
-  background: rgba(1,7,10,.9);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-#eye-seal {
-  font-size: .9rem;
-  color: var(--jade-dim);
-  cursor: pointer;
-  transition: color .25s, text-shadow .25s;
-  user-select: none;
-  opacity: .5;
-  font-family: 'EB Garamond', serif;
-}
-#eye-seal:hover {
-  color: var(--jade-glow);
-  text-shadow: 0 0 18px var(--jade-glow);
-  opacity: 1;
-}
-.ft-info {
-  display: flex;
-  align-items: center;
-  gap: 2.4rem;
-}
-.ft-name {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .28em;
-  color: var(--jade-dim);
-  opacity: .55;
-}
-.ft-link {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .22em;
-  color: var(--text);
-  text-decoration: none;
-  transition: color .25s;
-  text-transform: uppercase;
-}
-.ft-link:hover { color: var(--jade-glow); }
-
-/* ── EASTER EGG OVERLAY ──────────────────────────────────── */
-#ee {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  background: rgba(1,7,10,.97);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .5s var(--ease);
-}
-#ee.open { opacity: 1; pointer-events: auto; }
-.ee-frame {
-  max-width: 580px;
-  padding: 3.5rem 4rem;
-  border: 1px solid rgba(21,200,94,.2);
-  position: relative;
-  text-align: center;
-}
-.ee-frame::before,
-.ee-frame::after {
-  content: '';
-  position: absolute;
-  width: 14px; height: 14px;
-  border-color: var(--jade-mid);
-  border-style: solid;
-  opacity: .4;
-}
-.ee-frame::before { top: 10px; left: 10px;  border-width: 1px 0 0 1px; }
-.ee-frame::after  { bottom: 10px; right: 10px; border-width: 0 1px 1px 0; }
-#ee-label {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .48em;
-  color: var(--jade-dim);
-  margin-bottom: 2rem;
-}
-#ee-text {
-  font-family: 'EB Garamond', serif;
-  font-size: 1.1rem;
-  font-style: italic;
-  line-height: 1.9;
-  color: var(--parchment);
-  margin-bottom: 2rem;
-  min-height: 3em;
-}
-#ee-dismiss {
-  font-family: 'Space Mono', monospace;
-  font-size: .5rem;
-  letter-spacing: .3em;
-  color: var(--jade-dim);
-  cursor: pointer;
-  transition: color .2s;
-}
-#ee-dismiss:hover { color: var(--jade-glow); }
-
-/* ── RESPONSIVE ──────────────────────────────────────────── */
-@media (max-width: 900px) {
-  #rail { display: none; }
-  main, footer { margin-left: 0; }
-  .chapter { padding: 5rem 1.8rem; }
-  #hero { padding: 0 1.8rem 10vh; }
-  .ap-grid { grid-template-columns: 1fr; }
-  .ap-formation { display: none; }
-  .fm-grid { grid-template-columns: 1fr; }
-  .gu-path { grid-template-columns: 1fr; gap: 1rem; }
-}
-@media (max-width: 600px) {
-  .hn-a { font-size: 3.5rem; }
-  .hn-b { font-size: 4.2rem; }
-  footer { flex-direction: column; gap: 1rem; text-align: center; }
-}
+:root{--rice:#f4efe4;--ink-0:#1a1510;--ink-1:#2d2820;--ink-2:#4a4035;--ink-3:#6b5f52;--ink-4:#9a8c7c;--vm:#c0392b;--seal:#a01010}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{background:var(--rice);color:var(--ink-1);font-family:'Noto Serif',serif}
+@media(pointer:fine){body,a{cursor:none}}
+#dot{position:fixed;width:8px;height:8px;background:var(--ink-0);border-radius:50%;pointer-events:none;z-index:10000;transform:translate(-50%,-50%);transition:width .18s,height .18s,background .18s}
+#dot.on{width:14px;height:14px;background:var(--vm)}
+#bg,#bd{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#bg{z-index:0}#bd{z-index:1}
+#prog{position:fixed;left:0;bottom:0;height:2px;width:0;background:var(--vm);z-index:9;opacity:.7}
+#sc{position:fixed;inset:0;z-index:2;display:flex;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+#sc::-webkit-scrollbar{display:none}
+.pn{flex:none;height:100%;display:flex;align-items:center;gap:2.2rem;padding:76px 7vw 44px}
+.sheet{background:color-mix(in srgb,var(--rice) 82%,transparent);border:1px solid color-mix(in srgb,var(--ink-0) 12%,transparent);padding:2.4rem 2.6rem;max-height:100%;overflow-y:auto;scrollbar-width:none;opacity:0;transform:translateY(16px);transition:opacity 1s,transform 1s}
+.sheet.in{opacity:1;transform:none}
+.cin{font-family:'Cinzel',serif;text-transform:uppercase}
+nav{position:fixed;top:0;left:0;right:0;z-index:9;padding:1.1rem 2.5rem;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(color-mix(in srgb,var(--rice) 92%,transparent) 60%,transparent)}
+.seal{font-family:'Noto Serif SC',serif;font-size:1.2rem;color:var(--seal);width:42px;height:42px;border:2px solid var(--seal);display:flex;align-items:center;justify-content:center;transform:rotate(-3deg)}
+.nl{display:flex;gap:2.5rem;list-style:none}
+.nl a{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-3);text-decoration:none;transition:color .3s}
+.nl a:hover{color:var(--ink-0)}
+#hero{width:100vw;flex-direction:column;justify-content:center;text-align:center;gap:0;position:relative}
+.hk{font-family:'Noto Serif SC',serif;font-size:clamp(4.5rem,18vw,13rem);font-weight:300;line-height:1;color:var(--ink-0);text-shadow:2px 3px 14px rgba(26,21,16,.1)}
+.hn{font-family:'Cinzel',serif;font-size:clamp(.6rem,1.8vw,.82rem);letter-spacing:.45em;text-transform:uppercase;color:var(--ink-3);margin-top:.6rem}
+.ht{font-family:'IM Fell DW Pica',serif;font-style:italic;font-size:clamp(.95rem,2.2vw,1.3rem);color:var(--ink-2);max-width:560px;line-height:1.95;margin-top:2.2rem;padding:0 1.8rem}
+.hs{display:block;font-family:'Cinzel',serif;font-style:normal;font-size:.6rem;letter-spacing:.25em;color:var(--ink-4);margin-top:.8rem;text-align:right}
+.hsub{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.4em;color:var(--ink-4);margin-top:2rem;text-transform:uppercase}
+.cta{display:flex;gap:1.2rem;margin-top:2rem;flex-wrap:wrap;justify-content:center}
+.b1,.b2{font-family:'Cinzel',serif;font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;padding:.85rem 2rem;text-decoration:none;transition:all .3s}
+.b1{background:var(--ink-0);color:var(--rice)}.b1:hover{background:var(--vm)}
+.b2{border:1px solid var(--ink-3);color:var(--ink-1)}.b2:hover{border-color:var(--ink-0)}
+.unroll{position:absolute;bottom:2.4rem;right:7vw;display:flex;align-items:center;gap:.8rem;font-family:'Cinzel',serif;font-size:.55rem;letter-spacing:.4em;color:var(--ink-4);text-transform:uppercase}
+.unroll i{width:60px;height:1px;background:linear-gradient(to right,transparent,var(--ink-2));animation:pl 2.2s ease-in-out infinite;transform-origin:right}
+@keyframes pl{0%,100%{opacity:.35;transform:scaleX(.6)}50%{opacity:.9;transform:scaleX(1)}}
+.lab{display:flex;align-items:center;gap:1.2rem;margin-bottom:2rem}
+.lab .cn{font-family:'Noto Serif SC',serif;font-size:.8rem;color:var(--vm);letter-spacing:.3em}
+.lab i{height:1px;width:60px;background:linear-gradient(to right,var(--ink-3),transparent)}
+.lab h2{font-family:'IM Fell DW Pica',serif;font-size:clamp(1.6rem,3.6vw,2.6rem);font-weight:400;color:var(--ink-0);line-height:1.15;font-style:italic}
+.lab em{font-style:normal;color:var(--vm)}
+.ab{width:min(760px,86vw)}
+.ab p{font-family:'IM Fell DW Pica',serif;font-size:1.05rem;line-height:1.95;color:var(--ink-2);margin-bottom:1.3rem}
+.ab p b{color:var(--ink-0)}.ab p i{color:var(--vm)}
+.pull{margin:1.6rem 0;padding:1.4rem 1.8rem;border-left:2px solid var(--ink-0);background:color-mix(in srgb,var(--ink-0) 4%,transparent);font-family:'IM Fell DW Pica',serif;font-style:italic;font-size:1.1rem;line-height:1.85;color:var(--ink-1)}
+.sk{width:min(860px,90vw)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}
+.card{border:1px solid color-mix(in srgb,var(--ink-0) 14%,transparent);padding:1.4rem}
+.ct{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.3em;color:var(--vm);margin-bottom:1rem;text-transform:uppercase}
+.pills{display:flex;flex-wrap:wrap;gap:.4rem}
+.pills span{font-size:.78rem;padding:.2rem .7rem;border:1px solid color-mix(in srgb,var(--ink-0) 18%,transparent);color:var(--ink-2);transition:all .25s}
+.pills span:hover{background:var(--ink-0);color:var(--rice)}
+.proj{width:min(340px,78vw);display:flex;flex-direction:column;gap:.7rem}
+.tag{display:inline-block;font-family:'Cinzel',serif;font-size:.56rem;letter-spacing:.2em;text-transform:uppercase;padding:.18rem .6rem;border:1px solid color-mix(in srgb,var(--ink-0) 22%,transparent);color:var(--ink-3);margin:0 .4rem .3rem 0}
+.tag.w{border-color:#8b2020;color:var(--vm)}
+.pt{font-family:'IM Fell DW Pica',serif;font-size:1.6rem;color:var(--ink-0);line-height:1.2}
+.pd{font-size:.9rem;line-height:1.85;color:var(--ink-3)}
+.pl{font-family:'Cinzel',serif;font-size:.63rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-1);text-decoration:none;border-bottom:1px solid var(--ink-3);padding-bottom:2px;align-self:start;transition:color .3s}
+.pl:hover{color:var(--vm);border-color:var(--vm)}
+.fall{font-family:'IM Fell DW Pica',serif;font-style:italic;color:var(--ink-4);text-decoration:line-through;text-decoration-color:rgba(192,57,43,.4);margin-top:.8rem;display:block}
+.end{width:min(640px,86vw);text-align:center}
+.tf{font-family:'IM Fell DW Pica',serif;font-style:italic;font-size:clamp(1.1rem,2.4vw,1.6rem);color:var(--ink-1);line-height:1.85;margin-bottom:1.2rem}
+.ta{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.35em;color:var(--vm);text-transform:uppercase}
+.ft{margin-top:2.2rem;padding-top:1.6rem;border-top:1px solid color-mix(in srgb,var(--ink-0) 12%,transparent);display:flex;justify-content:center;gap:1.8rem;flex-wrap:wrap}
+.ft a{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-3);text-decoration:none}
+.ft a:hover{color:var(--vm)}
+.cr{font-size:.7rem;font-style:italic;color:var(--ink-4);margin-top:1.2rem}
+@media(max-width:700px){nav{padding:.9rem 1rem}.seal{display:none}.nl{gap:1rem;margin:0 auto}.nl a{letter-spacing:.14em;font-size:.58rem}.sheet{padding:1.6rem 1.3rem}.grid{grid-template-columns:1fr}.unroll{right:1.2rem}}
 </style>
 </head>
 <body>
+<div id="dot"></div>
+<canvas id="bg"></canvas><canvas id="bd"></canvas>
+<div id="prog"></div>
+<nav>
+  <div class="seal">暗</div>
+  <ul class="nl">
+    <li><a href="#about">Scroll I</a></li>
+    <li><a href="#skills">Scroll II</a></li>
+    <li><a href="#projects">Scroll III</a></li>
+    <li><a href="https://github.com/Darkstrike03" target="_blank">Codex</a></li>
+  </ul>
+</nav>
 
-<!-- THREE.JS CANVAS -->
-<canvas id="gl"></canvas>
-
-<!-- CURSOR -->
-<div id="c-dot"></div>
-<div id="c-ring"></div>
-
-<!-- LEFT RAIL -->
-<aside id="rail">
-  <span class="rail-brand">D · S</span>
-  <div class="rail-line"></div>
-  <nav class="rail-nav">
-    <a class="rn active" href="#hero" data-sec="hero">
-      <div class="rn-dot"></div>
-      <span class="rn-lbl">Origin</span>
-    </a>
-    <a class="rn" href="#aperture" data-sec="aperture">
-      <div class="rn-dot"></div>
-      <span class="rn-lbl">Aperture</span>
-    </a>
-    <a class="rn" href="#collection" data-sec="collection">
-      <div class="rn-dot"></div>
-      <span class="rn-lbl">Collection</span>
-    </a>
-    <a class="rn" href="#formations" data-sec="formations">
-      <div class="rn-dot"></div>
-      <span class="rn-lbl">Formations</span>
-    </a>
-    <a class="rn" href="#method" data-sec="method">
-      <div class="rn-dot"></div>
-      <span class="rn-lbl">Method</span>
-    </a>
-  </nav>
-  <div class="rail-line"></div>
-  <span class="rail-rank">蠱道</span>
-</aside>
-
-<!-- MAIN -->
-<main>
-
-  <!-- HERO -->
-  <section id="hero">
-    <div class="hero-content">
-      <p class="hero-tag">Rank Unknown &nbsp;·&nbsp; Path Unconstrained</p>
-      <h1 class="hero-name">
-        <span class="hn-a">DARK</span>
-        <span class="hn-b">STRIKE</span>
-      </h1>
-      <p class="hero-craft">Builder &nbsp;&middot;&nbsp; Cultivator of Code &nbsp;&middot;&nbsp; Pathmaker</p>
-      <div class="hero-scroll-indicator">
-        <div class="hsi-line"></div>
-        <span class="hsi-lbl">Open Aperture</span>
-      </div>
-    </div>
+<main id="sc">
+  <section class="pn" id="hero">
+    <h1 class="hk">暗撃</h1>
+    <p class="hn">DarkStrike · Builder of Digital Worlds</p>
+    <blockquote class="ht">"The way that can be built is not true;<br>the world that can be constructed is not true."<span class="hs">— Tao Te Ching · 道德經</span></blockquote>
+    <p class="hsub">Full Stack · Design · Mobile · AI</p>
+    <div class="cta"><a href="#projects" class="b1">Read the Scrolls</a><a href="https://github.com/Darkstrike03" target="_blank" class="b2">GitHub</a></div>
+    <div class="unroll"><span>Unroll</span><i></i></div>
   </section>
 
-  <!-- APERTURE (ABOUT) -->
-  <section id="aperture" class="chapter">
-    <div class="ch-inner">
-      <div class="ch-head">
-        <p class="ch-rank wipe">Aperture · Rank I</p>
-        <h2 class="ch-title wipe d1">The <span class="em">Cultivator's</span> Scripture</h2>
-      </div>
-      <div class="ap-grid">
-        <div class="ap-text">
-          <p class="wipe d2">A <em>full-stack craftsman</em> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.</p>
-          <p class="wipe d3">Drawn to the deep wells of <i>webnovels</i> — Reverend Insanity, Lord of the Mysteries, Renegade Immortal — I build platforms as one builds a cultivation system: with hidden mechanics, layered architecture, and worlds that breathe.</p>
-          <p class="wipe d4">A true cultivator pursues the apex. Every project is a <em>Gu formation</em> — resources refined, methods applied, result achieved. No sentiment. No waste.</p>
-          <div class="ap-annotation wipe d5">
-            APERTURE STATUS &nbsp;·&nbsp; OPEN<br>
-            GU WORMS REFINED &nbsp;·&nbsp; ACTIVE<br>
-            PATH AFFINITY &nbsp;·&nbsp; MULTI-REALM<br>
-            OBJECTIVE &nbsp;·&nbsp; BUILD WORLDS
-          </div>
-        </div>
-        <div class="ap-formation wipe d3">
-          <canvas id="fc" width="260" height="260"></canvas>
-        </div>
-      </div>
+  <section class="pn" id="about"><div class="sheet ab">
+    <div class="lab"><span class="cn">一</span><i></i><h2>The <em>Practitioner</em></h2></div>
+    <p>A <b>full-stack craftsman</b> who moves between worlds — front-end and back-end, native and web, design and logic. No boundary is fixed. No realm is closed.</p>
+    <p>Drawn to the deep wells of <i>webnovels</i> — Lord of the Mysteries, Renegade Immortal, Swallowed Star — I build platforms as one builds a world: with hidden systems, layered lore, and spaces that breathe.</p>
+    <div class="pull">"The way that can be built is not true;<br>the world that can be constructed is not true."</div>
+    <p>This is not contradiction — it is <b>compass</b>. Build anyway. Know it is incomplete. Then build deeper.</p>
+  </div></section>
+
+  <section class="pn" id="skills"><div class="sheet sk">
+    <div class="lab"><span class="cn">二</span><i></i><h2>The <em>Arts</em> Mastered</h2></div>
+    <div class="grid">
+      <div class="card"><div class="ct">筆 · Brushwork · Frontend</div><div class="pills"><span>HTML</span><span>CSS</span><span>Tailwind</span><span>React</span><span>Next.js</span><span>Figma</span></div></div>
+      <div class="card"><div class="ct">鉄 · Ironwork · Backend</div><div class="pills"><span>Node.js</span><span>Express</span><span>Python</span><span>Java</span><span>MongoDB</span><span>Oracle</span></div></div>
+      <div class="card"><div class="ct">風 · Wind · Mobile</div><div class="pills"><span>Flutter</span><span>Dart</span></div></div>
+      <div class="card"><div class="ct">道 · Path · Tools</div><div class="pills"><span>Git</span><span>VS Code</span><span>Vercel</span><span>Netlify</span><span>GDScript</span></div></div>
     </div>
+  </div></section>
+
+  <section class="pn" id="projects">
+    <div class="sheet" style="align-self:center"><div class="lab" style="margin:0"><span class="cn">三</span><i></i><h2>Worlds<br><em>Constructed</em></h2></div></div>
+    <div class="sheet proj"><div><span class="tag">Platform · Full Stack</span></div><div class="pt">Otaku's Library</div><p class="pd">A vast living archive — Anime, Manga, Manhwa, Manhua, Webcomics, Donghua, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p><a href="https://www.otakuslibrary.com/" target="_blank" class="pl">Visit →</a></div>
+    <div class="sheet proj"><div><span class="tag">App · Flutter · Dart</span><span class="tag">Web · Android · Windows</span></div><div class="pt">Gensaku</div><p class="pd">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows unified under a single vision.</p><a href="https://gensaku.vercel.app/" target="_blank" class="pl">Visit →</a></div>
+    <div class="sheet proj"><div><span class="tag">Web · Gamified</span></div><div class="pt">Localore</div><p class="pd">Folklore and mythological creatures from every culture, discovered through play. Knowledge as adventure — mythology made interactive.</p><a href="https://localore.vercel.app/" target="_blank" class="pl">Visit →</a></div>
+    <div class="sheet proj"><div><span class="tag">Web · Utility</span></div><div class="pt">Rocket Transfers</div><p class="pd">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p><a href="https://rocket-transfers.vercel.app/" target="_blank" class="pl">Visit →</a></div>
+    <div class="sheet proj"><div><span class="tag w">In Cultivation · AI</span></div><div class="pt">Aetheria</div><p class="pd">An AI model constructed from scratch on Kaggle — neuron by neuron, epoch by epoch. A digital grimoire written in real time.</p><span class="cin" style="font-size:.6rem;letter-spacing:.2em;color:var(--vm)">Cultivating...</span></div>
+    <div class="sheet proj" style="align-self:center"><div class="ct" style="text-transform:none;letter-spacing:.05em;font-family:'IM Fell DW Pica',serif;font-style:italic;color:var(--ink-4)">— Worlds that returned to the Void —</div><span class="fall">Tralia · Connect Hidden Places</span><span class="fall">1Pulse · One Stop Medical App</span></div>
   </section>
 
-  <!-- GU COLLECTION (SKILLS) -->
-  <section id="collection" class="chapter">
-    <div class="ch-inner">
-      <div class="ch-head">
-        <p class="ch-rank wipe">Gu Collection · Rank II</p>
-        <h2 class="ch-title wipe d1">Refined <span class="em">Arsenal</span></h2>
-      </div>
-      <div class="gu-manifest">
-        <div class="gu-path wipe d2">
-          <div class="gp-label">
-            <div class="gp-dot"></div>
-            <div>
-              <div class="gp-name">Vision</div>
-              <div class="gp-domain">Frontend Path</div>
-            </div>
-          </div>
-          <div class="gp-items">
-            <span class="gu-item">HTML</span>
-            <span class="gu-item">CSS</span>
-            <span class="gu-item">Tailwind</span>
-            <span class="gu-item">React</span>
-            <span class="gu-item">Next.js</span>
-            <span class="gu-item">Figma</span>
-            <span class="gu-item">Three.js</span>
-          </div>
-        </div>
-        <div class="gu-path wipe d3">
-          <div class="gp-label">
-            <div class="gp-dot"></div>
-            <div>
-              <div class="gp-name">Force</div>
-              <div class="gp-domain">Backend Path</div>
-            </div>
-          </div>
-          <div class="gp-items">
-            <span class="gu-item">Node.js</span>
-            <span class="gu-item">Express</span>
-            <span class="gu-item">Python</span>
-            <span class="gu-item">Java</span>
-            <span class="gu-item">MongoDB</span>
-            <span class="gu-item">Oracle</span>
-          </div>
-        </div>
-        <div class="gu-path wipe d4">
-          <div class="gp-label">
-            <div class="gp-dot"></div>
-            <div>
-              <div class="gp-name">Pursuit</div>
-              <div class="gp-domain">Mobile Path</div>
-            </div>
-          </div>
-          <div class="gp-items">
-            <span class="gu-item">Flutter</span>
-            <span class="gu-item">Dart</span>
-          </div>
-        </div>
-        <div class="gu-path wipe d5">
-          <div class="gp-label">
-            <div class="gp-dot"></div>
-            <div>
-              <div class="gp-name">Control</div>
-              <div class="gp-domain">Tools Path</div>
-            </div>
-          </div>
-          <div class="gp-items">
-            <span class="gu-item">Git</span>
-            <span class="gu-item">VS Code</span>
-            <span class="gu-item">Vercel</span>
-            <span class="gu-item">Netlify</span>
-            <span class="gu-item">GDScript</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- FORMATIONS (PROJECTS) -->
-  <section id="formations" class="chapter">
-    <div class="ch-inner">
-      <div class="ch-head">
-        <p class="ch-rank wipe">Gu Formations · Rank III</p>
-        <h2 class="ch-title wipe d1">Sealed <span class="em">Domains</span></h2>
-      </div>
-      <div class="fm-grid">
-
-        <div class="fm-card wipe d2">
-          <div class="fm-num">I</div>
-          <div class="fm-tags"><span class="fm-tag">Platform · Full Stack</span></div>
-          <div class="fm-title">Otaku's Library</div>
-          <p class="fm-desc">A vast living archive — Anime, Manga, Manhwa, Webcomics, Webnovels. Every format. One sanctuary for the devoted reader and watcher.</p>
-          <a href="https://www.otakuslibrary.com/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
-        </div>
-
-        <div class="fm-card wipe d3">
-          <div class="fm-num">II</div>
-          <div class="fm-tags">
-            <span class="fm-tag">App · Flutter · Dart</span>
-            <span class="fm-tag">Web · Android · Windows</span>
-          </div>
-          <div class="fm-title">Gensaku</div>
-          <p class="fm-desc">An ecosystem for authors to forge their novel worlds. Three planes, one creation engine — web, Android, and Windows.</p>
-          <a href="https://gensaku.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
-        </div>
-
-        <div class="fm-card wipe d3">
-          <div class="fm-num">III</div>
-          <div class="fm-tags"><span class="fm-tag">Web · Gamified</span></div>
-          <div class="fm-title">Localore</div>
-          <p class="fm-desc">Folklore and mythological creatures from every culture, discovered through play. Mythology made interactive.</p>
-          <a href="https://localore.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
-        </div>
-
-        <div class="fm-card wipe d4">
-          <div class="fm-num">IV</div>
-          <div class="fm-tags"><span class="fm-tag">Web · Utility</span></div>
-          <div class="fm-title">Rocket Transfers</div>
-          <p class="fm-desc">Instant file transfers — no friction, no account, no delay. Files sent across the void at the speed of thought.</p>
-          <a href="https://rocket-transfers.vercel.app/" target="_blank" rel="noopener" class="fm-link">Inspect Formation →</a>
-        </div>
-
-        <div class="fm-card wipe d4">
-          <div class="fm-num">V</div>
-          <div class="fm-tags"><span class="fm-tag wip">Refining · AI</span></div>
-          <div class="fm-title">Aetheria</div>
-          <p class="fm-desc">An AI model constructed from scratch — neuron by neuron, epoch by epoch. A digital Gu being refined in real time.</p>
-          <span class="fm-link sealed">In Cultivation</span>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- METHOD (CLOSING) -->
-  <section id="method" class="chapter">
-    <div class="ch-inner">
-      <p class="ch-rank wipe">Method · Rank IV</p>
-      <h2 class="ch-title wipe d1" style="margin-bottom:3.5rem;">The <span class="em">Grand</span> Method</h2>
-      <blockquote class="method-verse wipe d2">
-        "Life is a journey full of calamity.<br>
-        Only by standing at the peak of the world<br>
-        can you protect yourself and not be swallowed<br>
-        by this brutal world."
-      </blockquote>
-      <p class="method-attr wipe d3">— Fang Yuan &nbsp;·&nbsp; Reverend Insanity</p>
-      <a href="https://github.com/Darkstrike03" target="_blank" rel="noopener"
-         class="cultivate-btn wipe d4">◉ &nbsp; Initiate Contact</a>
-    </div>
-  </section>
-
+  <section class="pn" id="end"><div class="sheet end">
+    <p class="tf">"The way that can be built is not true;<br>the world that can be constructed is not true.<br><br><span style="font-size:.85em;opacity:.65">Yet here we are — building.</span>"</p>
+    <p class="ta">道德經 · Tao Te Ching</p>
+    <div class="ft"><a href="https://github.com/Darkstrike03" target="_blank">GitHub</a><a href="#hero">← Return</a></div>
+    <p class="cr">DarkStrike · 2025 · The scroll has no end. The way continues.<br>Landscape inspired by Shan Shui Inf — Lingdong Huang (MIT)</p>
+  </div></section>
 </main>
 
-<!-- FOOTER -->
-<footer>
-  <span id="eye-seal" title="三 more seals in the dark">蠱</span>
-  <div class="ft-info">
-    <span class="ft-name">DARKSTRIKE · 2025</span>
-    <a href="https://github.com/Darkstrike03" target="_blank" rel="noopener" class="ft-link">GitHub</a>
-    <a href="#hero" class="ft-link">Ascend ↑</a>
-  </div>
-</footer>
-
-<!-- EASTER EGG OVERLAY -->
-<div id="ee">
-  <div class="ee-frame">
-    <p id="ee-label">SCRIPTURE REVEALED</p>
-    <p id="ee-text"></p>
-    <p id="ee-dismiss">[ Close &nbsp;·&nbsp; Esc ]</p>
-  </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
 <script>
-'use strict';
-// ══════════════════════════════════════════════════════════
-//  RI PORTFOLIO — DarkStrike
-//  "Heaven and earth have no love. Gu Masters have no mercy."
-// ══════════════════════════════════════════════════════════
+const $=s=>document.querySelector(s),sc=$('#sc'),bg=$('#bg'),x=bg.getContext('2d'),bd=$('#bd'),b=bd.getContext('2d');
+const RM=matchMedia('(prefers-reduced-motion:reduce)').matches;
+let W,H,Lw,L=[],p=0,N=0,dirty=1,tg=null;
 
-// ── Console scripture ─────────────────────────────────────
-(function(){
-  const J = 'color:#15c85e;font-family:Space Mono,monospace;background:#01070a;';
-  const D = 'color:#708870;font-style:italic;background:#01070a;font-size:12px;';
-  const F = 'color:#083d1c;background:#01070a;font-size:11px;';
-  console.log('%c◉  GU MASTER\'S APERTURE  ◉',
-    J + 'font-size:14px;padding:8px 24px;letter-spacing:.25em;border:1px solid #0d3a1c;');
-  console.log('%c"Heaven and earth have no love. Gu Masters have no mercy."', D + 'padding:4px 12px;');
-  console.log('%c— Reverend Insanity · The Grand Gu World', F + 'padding:4px 12px;');
-  console.log('%cThree seals remain hidden in the page.', F + 'padding:4px 12px;');
-})();
+/* ── helpers ── */
+const mix=(A,B,t)=>A.map((v,i)=>v+(B[i]-v)*t),C=a=>`rgb(${a.map(Math.round)})`,RG=(a,o)=>`rgba(${a.map(Math.round)},${o})`;
+const sm=(a,c,t)=>{t=Math.max(0,Math.min(1,(t-a)/(c-a)));return t*t*(3-2*t)};
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 
-// ════════════════════════════════════════════════════════
-//  THREE.JS SCENE
-// ════════════════════════════════════════════════════════
-const gc = document.getElementById('gl');
-let W = innerWidth, H = innerHeight;
-
-const renderer = new THREE.WebGLRenderer({ canvas: gc, antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.setSize(W, H);
-renderer.setClearColor(0x01070a, 1);
-
-const scene  = new THREE.Scene();
-scene.fog    = new THREE.FogExp2(0x01070a, 0.0006);
-
-const camera = new THREE.PerspectiveCamera(60, W/H, 0.1, 900);
-camera.position.set(0, 0, 9);
-
-const ambL  = new THREE.AmbientLight(0x04120a, 2.2);
-const gL1   = new THREE.PointLight(0x0a4020, 2.8, 28);
-gL1.position.set(-4, 2, 2);
-scene.add(ambL, gL1);
-
-// ── Glow texture factory ──────────────────────────────────
-function mkGlow(r, g, b) {
-  const c = document.createElement('canvas');
-  c.width = c.height = 64;
-  const x = c.getContext('2d');
-  const gr = x.createRadialGradient(32,32,0, 32,32,32);
-  gr.addColorStop(0,   `rgba(${r},${g},${b},1)`);
-  gr.addColorStop(.3,  `rgba(${r},${g},${b},.65)`);
-  gr.addColorStop(.65, `rgba(${r},${g},${b},.2)`);
-  gr.addColorStop(1,   `rgba(${r},${g},${b},0)`);
-  x.fillStyle = gr; x.fillRect(0,0,64,64);
-  return new THREE.CanvasTexture(c);
+/* periodic ridged noise: integer harmonics over Lw → left edge == right edge, so the strip loops seamlessly */
+function ridge(R){
+  const F=[2,3,5,8,13,21,34,55],ph=F.map(()=>R()*6.283),am=F.map(f=>1/Math.pow(f,.85)),tot=am.reduce((a,c)=>a+c);
+  return u=>{let v=0;F.forEach((f,i)=>v+=am[i]*(1-Math.abs(Math.sin(f*Math.PI*u/Lw+ph[i]))));return v/tot};
 }
 
-// ── FIREFLY GROUPS ────────────────────────────────────────
-// 5 groups × 12 fireflies each = 60 jade fireflies
-// 1 group × 14 = 14 gold fireflies
-const ffGroups = [];
-const FF_PER = 12;
-
-function makeFireflyGroup(count, texR, texG, texB, size, spread) {
-  const pos  = new Float32Array(count * 3);
-  const meta = { ox:[], oy:[], oz:[], sx:[], sy:[], sz:[], speed:[], ph:[], id: Date.now()+Math.random() };
-  for (let i = 0; i < count; i++) {
-    meta.ox.push((Math.random()-.5) * spread);
-    meta.oy.push((Math.random()-.5) * spread * .6);
-    meta.oz.push(-Math.random() * 8 - 1);
-    meta.sx.push(.22 + Math.random() * .85);
-    meta.sy.push(.14 + Math.random() * .55);
-    meta.sz.push(.12 + Math.random() * .38);
-    meta.speed.push(.12 + Math.random() * .22);
-    meta.ph.push(Math.random() * Math.PI * 2);
-    pos[i*3] = meta.ox[i]; pos[i*3+1] = meta.oy[i]; pos[i*3+2] = meta.oz[i];
+/* ── landscape layers (t = top of bitmap as fraction of H, k = parallax speed) ── */
+const SP=[
+ {k:.15,t:.30,b:.64,amp:.34,seed:7, a:.10,nc:[96,108,135],na:.22,tex:160,tr:0},
+ {k:.30,t:.40,b:.74,amp:.30,seed:11,a:.20,nc:[60,68,92], na:.50,tex:260,tr:40,ts:.7},
+ {k:.50,t:.55,b:.86,amp:.26,seed:5, a:.42,nc:[12,12,18], na:.92,tex:380,tr:70,ts:1.2},
+ {k:.75,t:.86,w:1,seed:9,nc:[150,165,195]}
+];
+function build(s,nt){
+  const c=mk(Lw,Math.ceil(H*(1-s.t))),g=c.getContext('2d'),R=rng(s.seed);
+  const col=nt?s.nc:[30,25,18],A=a=>`rgba(${col},${Math.min(a,1)})`;
+  g.translate(0,-H*s.t);
+  const line=(x1,y1,cx,cy,x2,y2,st,lw)=>{g.beginPath();g.moveTo(x1,y1);g.quadraticCurveTo(cx,cy,x2,y2);g.strokeStyle=st;g.lineWidth=lw;g.stroke()};
+  if(s.w){ // water: ripples, reeds, three boats
+    for(let i=0;i<110;i++){const px=R()*(Lw-160),py=H*(.9+R()*.1),l=30+R()*110;line(px,py,px+l/2,py+(R()-.5)*3,px+l,py,A(.05+R()*.12),.8)}
+    for(let i=0;i<14;i++){const px=60+R()*(Lw-120),py=H*(.91+R()*.05);for(let j=0;j<5;j++)line(px+j*3,py,px+j*3+(R()-.3)*6,py-14,px+j*3+(R()-.5)*14,py-22-R()*14,A(.4),.9)}
+    [.18,.52,.86].forEach(f=>{const bx=Lw*f,by=H*.945;line(bx-22,by,bx,by+8,bx+22,by,A(.75),1.6);line(bx+4,by,bx+4,by,bx+4,by-22,A(.7),1);g.beginPath();g.arc(bx+4,by-24,2.6,0,6.283);g.fillStyle=A(.7);g.fill()});
+    return c;
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({
-    map: mkGlow(texR, texG, texB),
-    size, transparent: true, opacity: .55,
-    blending: THREE.AdditiveBlending, depthWrite: false,
-    sizeAttenuation: true
-  });
-  const pts = new THREE.Points(geo, mat);
-  scene.add(pts);
-  return { pts, geo, pos, mat, meta, count };
+  const fa=nt?s.na:s.a,Y=u=>H*s.b-s.h(((u%Lw)+Lw)%Lw)*H*s.amp;
+  s.h=ridge(R);
+  g.beginPath();g.moveTo(0,H);for(let u=0;u<=Lw;u+=3)g.lineTo(u,Y(u));g.lineTo(Lw,H);g.fillStyle=A(fa);g.fill();
+  g.beginPath();for(let u=0;u<=Lw;u+=3)u?g.lineTo(u,Y(u)):g.moveTo(u,Y(u));g.strokeStyle=A(fa*1.8);g.lineWidth=1.1;g.stroke();
+  for(let i=0;i<s.tex;i++){ // hatch strokes follow the slope under the ridge
+    const kk=s.t<.35?.08:s.t<.5?.2:.42,u=10+R()*(Lw-30),y=Y(u)+R()*H*.1*(1+kk*2),sl=(Y(u+5)-Y(u-5))/10,l=8+R()*16*(.5+kk*2);
+    line(u,y,u+l*.5,y+sl*l*.5+R()*3,u+l,y+sl*l,A(Math.min(.5,fa*(.5+R()*.9))),.5+R()*.7);
+  }
+  for(let i=0;i<s.tr;i++){ // sparse trees
+    const tx=10+R()*(Lw-20),ty=Y(tx)+R()*14,t=s.ts*(.6+R()*.8),h=(16+R()*14)*t;
+    line(tx,ty,tx,ty,tx,ty-h,A(.55),Math.max(.7,1.2*t));
+    for(let j=0;j<4;j++){const by=ty-h*(.3+j*.17),bx=(j%2?1:-1)*(4+R()*5)*t;line(tx,by,tx,by,tx+bx,by-4*t,A(.35),.8)}
+  }
+  return c;
+}
+const ST=Array.from({length:80},()=>({x:Math.random(),y:Math.random(),r:Math.random()<.2?2:1,a:.4+Math.random()*.6}));
+function size(){
+  W=innerWidth;H=innerHeight;[bg,bd].forEach(c=>{c.width=W;c.height=H});
+  Lw=Math.max(2000,Math.round(W*1.3));
+  L=SP.map(s=>({k:s.k,t:s.t,d:build(s,0),n:build(s,1)}));dirty=1;
+}
+let rz;addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(size,150)});
+
+/* ── render: sky → stars → sun/moon → layers (day/night crossfade) → mist → water ── */
+const DT=[233,225,209],DB=[244,239,228],NT=[10,12,22],NB=[34,33,42];
+let pc=0,MX=0;
+const put=l=>{pc=Math.max(pc+1,Math.round(l.k*MX/Lw));const o=(p*pc*Lw)%Lw;[[l.d,1-N],[l.n,N]].forEach(([c,a])=>{if(a>.01){x.globalAlpha=a;x.drawImage(c,-o,l.t*H);x.drawImage(c,Lw-o,l.t*H)}});x.globalAlpha=1};
+const mist=(yc,hh,a,bot)=>{const g=x.createLinearGradient(0,(yc-hh)*H,0,(yc+hh)*H);g.addColorStop(0,RG(bot,0));g.addColorStop(.5,RG(bot,a));g.addColorStop(1,RG(bot,0));x.fillStyle=g;x.fillRect(0,(yc-hh)*H,W,hh*2*H)};
+function draw(){
+  MX=sc.scrollWidth-sc.clientWidth;p=MX>0?Math.min(1,sc.scrollLeft/MX):0;
+  N=sm(.42,.62,p)*(1-sm(.82,.97,p));const w=Math.max(0,1-Math.abs(p-.52)/.13,1-Math.abs(p-.93)/.07);
+  const top=mix(mix(DT,NT,N),[176,104,92],w*.45),bot=mix(mix(DB,NB,N),[228,152,106],w*.6);
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,C(top));g.addColorStop(.8,C(bot));g.addColorStop(1,C(bot));x.fillStyle=g;x.fillRect(0,0,W,H);
+  if(N>.4){x.fillStyle='#e9e4d2';ST.forEach(s=>{x.globalAlpha=Math.min(1,(N-.4)*1.8)*s.a;x.fillRect(s.x*W,s.y*H*.5,s.r,s.r)});x.globalAlpha=1}
+  // one orb: red sun across the first 72% of the journey, pale moon after
+  const sun=p<.55||p>.9,ang=p<.55?Math.PI*(.18+.82*p/.55):p>.9?Math.PI*.18*(p-.9)/.1:Math.PI*(p-.55)/.35,oc=sun?[192,58,44]:[235,229,210],r=Math.min(W,H)*.05;
+  const cx=W*(.5-Math.cos(ang)*.4),cy=H*(.64-Math.sin(ang)*.5);
+  const og=x.createRadialGradient(cx,cy,r*.5,cx,cy,r*4);og.addColorStop(0,RG(oc,.25));og.addColorStop(1,RG(oc,0));x.fillStyle=og;x.fillRect(cx-r*4,cy-r*4,r*8,r*8);
+  x.beginPath();x.arc(cx,cy,r,0,6.283);x.fillStyle=RG(oc,.85);x.fill();
+  pc=0;put(L[0]);mist(.5,.1,.5,bot);put(L[1]);mist(.62,.1,.5,bot);put(L[2]);
+  const wg=x.createLinearGradient(0,H*.8,0,H*.9);wg.addColorStop(0,RG(bot,0));wg.addColorStop(1,RG(bot,.92));x.fillStyle=wg;x.fillRect(0,H*.8,W,H*.1);
+  x.fillStyle=RG(bot,.92);x.fillRect(0,H*.9,W,H*.1);put(L[3]);
+  // page palette follows the sky
+  const rt=document.documentElement.style,set=(k,a,c)=>rt.setProperty(k,C(mix(a,c,N)));
+  set('--rice',[244,239,228],[20,17,13]);set('--ink-0',[26,21,16],[240,232,214]);set('--ink-1',[45,40,32],[221,210,187]);
+  set('--ink-2',[74,64,53],[192,180,156]);set('--ink-3',[107,95,82],[160,149,128]);set('--ink-4',[154,140,124],[125,115,99]);
+  $('#prog').style.width=p*100+'%';
 }
 
-// 5 offset jade groups
-const jadePhases = [0, 1.2, 2.5, 3.8, 5.0];
-for (let g = 0; g < 5; g++) {
-  ffGroups.push(makeFireflyGroup(FF_PER, 21, 200, 94, .14 + g*.008, 18));
-}
-// Gold firefly group
-ffGroups.push(makeFireflyGroup(14, 228, 190, 60, .12, 14));
-
-function updateFireflies(t) {
-  ffGroups.forEach((grp, gi) => {
-    const ph = jadePhases[gi] || 0;
-    const opBase  = gi < 5 ? .45 : .38;
-    const opRange = .3;
-    grp.mat.opacity = opBase + Math.sin(t * 1.8 + ph) * opRange;
-    for (let i = 0; i < grp.count; i++) {
-      const s = grp.meta.speed[i], p = grp.meta.ph[i];
-      grp.pos[i*3]   = grp.meta.ox[i] + Math.sin(t * s       + p)       * grp.meta.sx[i];
-      grp.pos[i*3+1] = grp.meta.oy[i] + Math.sin(t * s * .73 + p + 1.5) * grp.meta.sy[i]
-                                       + Math.sin(t * .38 + i)   * .12; // gentle bob
-      grp.pos[i*3+2] = grp.meta.oz[i] + Math.cos(t * s * .55 + p)       * grp.meta.sz[i];
-    }
-    grp.geo.attributes.position.needsUpdate = true;
-  });
+/* ── birds ── */
+const B=Array.from({length:10},(_,i)=>({x:-80-i*70,y:60+Math.random()*130,v:.25+Math.random()*.25,s:4.5+Math.random()*5,f:Math.random()*6.28}));
+function birds(){
+  b.clearRect(0,0,W,H);if(RM||N>.9)return;
+  B.forEach(o=>{o.x+=o.v;o.f+=.05;if(o.x>W+100){o.x=-100;o.y=50+Math.random()*160}
+    const wv=Math.sin(o.f)*o.s*.65;b.beginPath();b.moveTo(o.x-o.s,o.y+wv*.25);b.quadraticCurveTo(o.x-o.s*.45,o.y-wv,o.x,o.y);b.quadraticCurveTo(o.x+o.s*.45,o.y-wv,o.x+o.s,o.y+wv*.25);
+    b.strokeStyle=`rgba(26,21,16,${.48*(1-N)})`;b.lineWidth=o.s*.17;b.lineCap='round';b.stroke()});
 }
 
-// ── GU WORM LINES ─────────────────────────────────────────
-const WORM_N = 16, WORM_SEG = 12;
-const worms = [];
+/* ── horizontal scroll: wheel / keys / nav → eased scrollLeft; touch stays native ── */
+const go=v=>tg=v;
+sc.addEventListener('wheel',e=>{e.preventDefault();go((tg??sc.scrollLeft)+(Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY))},{passive:false});
+addEventListener('pointerdown',()=>tg=null);
+addEventListener('keydown',e=>{const k={ArrowRight:.35,ArrowDown:.35,PageDown:.8,' ':.8,ArrowLeft:-.35,ArrowUp:-.35,PageUp:-.8}[e.key];
+  if(k){e.preventDefault();go((tg??sc.scrollLeft)+k*innerWidth)}else if(e.key=='Home')go(0);else if(e.key=='End')go($('#end').offsetLeft)});
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();const el=$(a.getAttribute('href'));go(el.id=='hero'?MX:el.offsetLeft)}));
 
-for (let w = 0; w < WORM_N; w++) {
-  const pos = new Float32Array(WORM_SEG * 3);
-  // Seed segment positions
-  const bx = (Math.random()-.5) * 16;
-  const by = (Math.random()-.5) * 10;
-  const bz = -Math.random() * 6 - 1;
-  for (let s = 0; s < WORM_SEG; s++) {
-    pos[s*3] = bx + (Math.random()-.5) * .5;
-    pos[s*3+1] = by + (Math.random()-.5) * .5;
-    pos[s*3+2] = bz;
+/* cursor */
+const dot=$('#dot');addEventListener('mousemove',e=>{dot.style.left=e.clientX+'px';dot.style.top=e.clientY+'px'});
+document.addEventListener('mouseover',e=>dot.classList.toggle('on',!!e.target.closest('a')));
+
+/* reveal sheets as they enter */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}}),{root:sc,threshold:.1});
+document.querySelectorAll('.sheet').forEach(s=>io.observe(s));
+
+const hc=$('#hero').cloneNode(true);hc.id='hero2';sc.appendChild(hc); // twin of the hero so the loop point is invisible
+size();
+let lx=-1;
+(function f(){
+  requestAnimationFrame(f);
+  if(tg!=null){const d=tg-sc.scrollLeft;let s=RM?d:d*.1;if(!RM&&Math.abs(s)<1)s=Math.sign(d);sc.scrollLeft+=s;if(Math.abs(tg-sc.scrollLeft)<1)tg=null}
+  if(MX>0){ // wrap: hero twin at the end == hero at the start
+    if(sc.scrollLeft>=MX-1){sc.scrollLeft=0;if(tg!=null)tg-=MX}
+    else if(tg!=null&&tg<0&&sc.scrollLeft<=1){sc.scrollLeft=MX;tg+=MX}
   }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const bright = .22 + Math.random() * .38;
-  const mat = new THREE.LineBasicMaterial({
-    color: new THREE.Color(0, bright, bright * .45),
-    transparent: true,
-    opacity: .22 + Math.random() * .28
-  });
-  const line = new THREE.Line(geo, mat);
-  scene.add(line);
-  worms.push({
-    line, geo, pos,
-    params: {
-      fx: .04 + Math.random() * .08,
-      fy: .03 + Math.random() * .07,
-      fz: .02 + Math.random() * .05,
-      rx: 2.5 + Math.random() * 4,
-      ry: 1.5 + Math.random() * 3,
-      rz: .8  + Math.random() * 1.6,
-      ox: Math.random() * Math.PI * 2,
-      oy: Math.random() * Math.PI * 2,
-      oz: Math.random() * Math.PI * 2,
-      t: Math.random() * Math.PI * 2
-    }
-  });
-}
-
-function lerp(a, b, alpha) { return a + (b - a) * alpha; }
-
-function updateWorms(dt) {
-  worms.forEach(w => {
-    const p = w.params;
-    p.t += dt;
-    // New head position along parametric path
-    const hx = Math.sin(p.t * p.fx + p.ox) * p.rx;
-    const hy = Math.cos(p.t * p.fy + p.oy) * p.ry;
-    const hz = Math.sin(p.t * p.fz + p.oz) * p.rz - 3.5;
-    // Shift segments (each lags toward the one before it)
-    for (let s = WORM_SEG-1; s > 0; s--) {
-      w.pos[s*3]   = lerp(w.pos[s*3],   w.pos[(s-1)*3],   .18);
-      w.pos[s*3+1] = lerp(w.pos[s*3+1], w.pos[(s-1)*3+1], .18);
-      w.pos[s*3+2] = lerp(w.pos[s*3+2], w.pos[(s-1)*3+2], .18);
-    }
-    w.pos[0] = hx; w.pos[1] = hy; w.pos[2] = hz;
-    w.geo.attributes.position.needsUpdate = true;
-  });
-}
-
-// ── SPRING AUTUMN CICADA ──────────────────────────────────
-(function buildCicada(){
-  const CW = 480, CH = 320;
-  const cc = document.createElement('canvas');
-  cc.width = CW; cc.height = CH;
-  const ctx = cc.getContext('2d');
-  const CX = CW/2, CY = CH/2 + 12;
-
-  // Overall aura
-  const aura = ctx.createRadialGradient(CX, CY, 5, CX, CY, 185);
-  aura.addColorStop(0,   'rgba(200,150,30,.24)');
-  aura.addColorStop(.45, 'rgba(140,100,20,.08)');
-  aura.addColorStop(1,   'rgba(0,0,0,0)');
-  ctx.fillStyle = aura; ctx.fillRect(0, 0, CW, CH);
-
-  // Wing helper
-  function drawWing(pts, grad, alpha, stroke) {
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i + 1 < pts.length; i += 2) {
-      ctx.quadraticCurveTo(pts[i][0], pts[i][1], pts[i+1][0], pts[i+1][1]);
-    }
-    ctx.closePath();
-    ctx.fillStyle = grad; ctx.fill();
-    ctx.strokeStyle = stroke; ctx.lineWidth = .85; ctx.stroke();
-    ctx.restore();
-  }
-
-  // Left upper wing
-  const lg1 = ctx.createLinearGradient(CX-200, CY-80, CX-10, CY+10);
-  lg1.addColorStop(0, 'rgba(170,120,28,.55)'); lg1.addColorStop(1, 'rgba(230,185,58,.22)');
-  drawWing([
-    [CX-16, CY-28],
-    [CX-65, CY-95], [CX-185, CY-72],
-    [CX-210, CY-8], [CX-170, CY+40],
-    [CX-55, CY+20], [CX-14, CY+6]
-  ], lg1, .4, 'rgba(234,189,76,.38)');
-
-  // Right upper wing
-  const lg2 = ctx.createLinearGradient(CX+10, CY+10, CX+200, CY-80);
-  lg2.addColorStop(0, 'rgba(230,185,58,.22)'); lg2.addColorStop(1, 'rgba(170,120,28,.55)');
-  drawWing([
-    [CX+16, CY-28],
-    [CX+65, CY-95], [CX+185, CY-72],
-    [CX+210, CY-8], [CX+170, CY+40],
-    [CX+55, CY+20], [CX+14, CY+6]
-  ], lg2, .4, 'rgba(234,189,76,.38)');
-
-  // Left lower wing
-  ctx.save(); ctx.globalAlpha = .28;
-  ctx.beginPath();
-  ctx.moveTo(CX-14, CY+6);
-  ctx.quadraticCurveTo(CX-55, CY+20, CX-130, CY+65);
-  ctx.quadraticCurveTo(CX-110, CY+105, CX-45, CY+78);
-  ctx.quadraticCurveTo(CX-20, CY+55, CX-10, CY+36);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(196,150,32,.55)'; ctx.fill();
-  ctx.strokeStyle = 'rgba(234,189,76,.3)'; ctx.lineWidth = .7; ctx.stroke();
-  ctx.restore();
-
-  // Right lower wing
-  ctx.save(); ctx.globalAlpha = .28;
-  ctx.beginPath();
-  ctx.moveTo(CX+14, CY+6);
-  ctx.quadraticCurveTo(CX+55, CY+20, CX+130, CY+65);
-  ctx.quadraticCurveTo(CX+110, CY+105, CX+45, CY+78);
-  ctx.quadraticCurveTo(CX+20, CY+55, CX+10, CY+36);
-  ctx.closePath();
-  ctx.fillStyle = 'rgba(196,150,32,.55)'; ctx.fill();
-  ctx.strokeStyle = 'rgba(234,189,76,.3)'; ctx.lineWidth = .7; ctx.stroke();
-  ctx.restore();
-
-  // Body
-  const bodyG = ctx.createLinearGradient(CX-13, CY-58, CX+13, CY+58);
-  bodyG.addColorStop(0, '#eabf50'); bodyG.addColorStop(.45, '#c4921a');
-  bodyG.addColorStop(.8, '#96720e'); bodyG.addColorStop(1, '#5c440a');
-  ctx.beginPath(); ctx.ellipse(CX, CY, 13, 58, 0, 0, Math.PI*2);
-  ctx.fillStyle = bodyG; ctx.fill();
-  ctx.strokeStyle = 'rgba(234,189,76,.65)'; ctx.lineWidth = .9; ctx.stroke();
-
-  // Abdominal segments
-  for (let i = 0; i < 7; i++) {
-    ctx.beginPath(); ctx.ellipse(CX, CY-24+i*13.5, 11-i*.4, 6.5, 0, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(234,189,76,.28)'; ctx.lineWidth = .6; ctx.stroke();
-  }
-
-  // Head
-  ctx.beginPath(); ctx.ellipse(CX, CY-64, 9.5, 10, 0, 0, Math.PI*2);
-  ctx.fillStyle = '#c4921a'; ctx.fill();
-  ctx.strokeStyle = 'rgba(234,189,76,.8)'; ctx.lineWidth = 1; ctx.stroke();
-
-  // Eyes (glowing jade — Spring Autumn sees through time)
-  [-6, 6].forEach(ex => {
-    const eg = ctx.createRadialGradient(CX+ex, CY-67, 0, CX+ex, CY-67, 5);
-    eg.addColorStop(0, 'rgba(21,200,94,.95)');
-    eg.addColorStop(.5,'rgba(14,140,65,.55)');
-    eg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.beginPath(); ctx.arc(CX+ex, CY-67, 4.5, 0, Math.PI*2);
-    ctx.fillStyle = eg; ctx.fill();
-  });
-
-  // Wing veins (left)
-  [[CX-16,CY-12],[CX-72,CY-44],[CX-155,CY-36]],
-  [[CX-16,CY+2], [CX-68,CY+4], [CX-125,CY+18]],
-  [[CX-20,CY-22],[CX-105,CY-62],[CX-188,CY-50]]
-  ;  // Rewrite as explicit loops
-  const lVeins = [
-    [[CX-16,CY-12],[CX-72,CY-44],[CX-155,CY-36]],
-    [[CX-16,CY+2], [CX-68,CY+4], [CX-125,CY+18]],
-    [[CX-20,CY-22],[CX-105,CY-62],[CX-188,CY-50]]
-  ];
-  const rVeins = [
-    [[CX+16,CY-12],[CX+72,CY-44],[CX+155,CY-36]],
-    [[CX+16,CY+2], [CX+68,CY+4], [CX+125,CY+18]],
-    [[CX+20,CY-22],[CX+105,CY-62],[CX+188,CY-50]]
-  ];
-  [...lVeins, ...rVeins].forEach(pts => {
-    ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
-    ctx.quadraticCurveTo(pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
-    ctx.strokeStyle = 'rgba(234,189,76,.2)'; ctx.lineWidth = .55; ctx.stroke();
-  });
-
-  // Antennae
-  ctx.beginPath(); ctx.moveTo(CX-6, CY-72);
-  ctx.quadraticCurveTo(CX-35, CY-100, CX-62, CY-88);
-  ctx.strokeStyle = 'rgba(234,189,76,.45)'; ctx.lineWidth = .7; ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(CX+6, CY-72);
-  ctx.quadraticCurveTo(CX+35, CY-100, CX+62, CY-88);
-  ctx.strokeStyle = 'rgba(234,189,76,.45)'; ctx.lineWidth = .7; ctx.stroke();
-
-  const tex = new THREE.CanvasTexture(cc);
-  const cicada = new THREE.Mesh(
-    new THREE.PlaneGeometry(4.2, 2.8, 24, 12),
-    new THREE.ShaderMaterial({
-      uniforms: {
-        uMap:     { value: tex },
-        uTime:    { value: 0.0 },
-        uOpacity: { value: 0.88 }
-      },
-      vertexShader: `
-        varying vec2 vUv;
-        uniform float uTime;
-        void main() {
-          vec3 pos = position;
-          float wx = abs(pos.x) / 2.1;
-          pos.z += sin(uTime * 7.0 + pos.x * 2.5) * wx * wx * 0.20;
-          vUv = uv;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
-        }
-      `,
-      fragmentShader: `
-        varying vec2 vUv;
-        uniform sampler2D uMap;
-        uniform float uOpacity;
-        void main() {
-          vec4 col = texture2D(uMap, vUv);
-          col.a *= uOpacity;
-          gl_FragColor = col;
-        }
-      `,
-      transparent: true,
-      blending: THREE.AdditiveBlending,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    })
-  );
-  cicada.position.set(0, .5, -2);
-  scene.add(cicada);
-  window._cicada = cicada;
-
-  // Cicada glow sprite
-  const glowC = document.createElement('canvas');
-  glowC.width = glowC.height = 128;
-  const gx = glowC.getContext('2d');
-  const gg = gx.createRadialGradient(64,64,0, 64,64,64);
-  gg.addColorStop(0, 'rgba(200,155,40,.45)');
-  gg.addColorStop(.5,'rgba(160,120,30,.12)');
-  gg.addColorStop(1, 'rgba(0,0,0,0)');
-  gx.fillStyle = gg; gx.fillRect(0,0,128,128);
-  const gSp = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: new THREE.CanvasTexture(glowC),
-    transparent: true, blending: THREE.AdditiveBlending
-  }));
-  gSp.scale.set(6.5, 4.5, 1);
-  gSp.position.set(0, .5, -2.1);
-  scene.add(gSp);
-  window._cicadaGlow = gSp;
-})();
-
-// ── BACKGROUND FORMATION RING ─────────────────────────────
-const torusMesh = new THREE.Mesh(
-  new THREE.TorusGeometry(4.2, .018, 6, 120),
-  new THREE.MeshBasicMaterial({ color: 0x0a3d1c, transparent: true, opacity: .35 })
-);
-torusMesh.position.z = -6;
-scene.add(torusMesh);
-// 6 formation nodes on torus
-for (let i = 0; i < 6; i++) {
-  const a = i * Math.PI / 3;
-  const nd = new THREE.Mesh(
-    new THREE.SphereGeometry(.055, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x12c050 })
-  );
-  nd.position.set(Math.cos(a)*4.2, Math.sin(a)*4.2, -6);
-  scene.add(nd);
-}
-
-// ════════════════════════════════════════════════════════
-//  SCROLL & MOUSE STATE
-// ════════════════════════════════════════════════════════
-let scrollY = 0, scrollP = 0;
-const mouse = { x: 0, y: 0, ex: 0, ey: 0 };
-let cdX = W/2, cdY = H/2;
-
-window.addEventListener('mousemove', e => {
-  mouse.ex = (e.clientX / W - .5) * 2;
-  mouse.ey = (e.clientY / H - .5) * 2;
-  cdX = e.clientX; cdY = e.clientY;
-  cDot.style.left = cdX + 'px'; cDot.style.top = cdY + 'px';
-});
-
-window.addEventListener('scroll', () => {
-  scrollY = window.scrollY;
-  scrollP = scrollY / Math.max(1, document.body.scrollHeight - H);
-  document.querySelectorAll('.chapter').forEach(s => {
-    const r = s.getBoundingClientRect();
-    if (r.top <= H * .5 && r.bottom > 0) {
-      document.querySelectorAll('.rn').forEach(n =>
-        n.classList.toggle('active', n.dataset.sec === s.id));
-    }
-  });
-  if (scrollY < 100) {
-    document.querySelector('.rn[data-sec="hero"]').classList.add('active');
-    document.querySelectorAll('.rn:not([data-sec="hero"])').forEach(n => n.classList.remove('active'));
-  }
-  // Pan cicada out on scroll
-  if (window._cicada) {
-    const heroH = document.getElementById('hero').offsetHeight || H;
-    const op = Math.max(0, 1 - scrollY / (heroH * .68));
-    window._cicada.material.uniforms.uOpacity.value = op * .88;
-    if (window._cicadaGlow) window._cicadaGlow.material.opacity = op * .75;
-    window._cicada.position.z = -2 - scrollY * .004;
-  }
-}, { passive: true });
-
-// Rail nav click
-document.querySelectorAll('.rn').forEach(n =>
-  n.addEventListener('click', e => {
-    e.preventDefault();
-    document.getElementById(n.dataset.sec)?.scrollIntoView({ behavior: 'smooth' });
-  })
-);
-
-// ════════════════════════════════════════════════════════
-//  ANIMATION LOOP
-// ════════════════════════════════════════════════════════
-let prevT = performance.now();
-function animate() {
-  requestAnimationFrame(animate);
-  const now = performance.now();
-  const dt  = Math.min((now - prevT) * .001, .05);
-  prevT = now;
-  const t = now * .001;
-
-  // Smooth mouse
-  mouse.x += (mouse.ex - mouse.x) * .04;
-  mouse.y += (mouse.ey - mouse.y) * .04;
-
-  // Camera parallax
-  camera.position.x += (mouse.x * .55 - camera.position.x) * .028;
-  camera.position.y += (-mouse.y * .38 - camera.position.y) * .028;
-
-  // Fog density
-  scene.fog.density = .0006 + scrollP * .00055;
-
-  // Formation torus rotation
-  torusMesh.rotation.z = t * .065;
-
-  // Cicada float
-  if (window._cicada) {
-    window._cicada.material.uniforms.uTime.value = t;
-    window._cicada.rotation.y = Math.sin(t * .25) * .06 + mouse.x * .032;
-    window._cicada.rotation.x = mouse.y * .022;
-    window._cicada.position.y = .5 + Math.sin(t * .38) * .1;
-    if (window._cicadaGlow) {
-      window._cicadaGlow.position.copy(window._cicada.position);
-      window._cicadaGlow.position.z -= .1;
-    }
-  }
-
-  // Fireflies
-  updateFireflies(t);
-
-  // Worms
-  updateWorms(dt * 0.85);
-
-  renderer.render(scene, camera);
-}
-const cDot  = document.getElementById('c-dot');
-const cRing = document.getElementById('c-ring');
-animate();
-
-// Resize
-window.addEventListener('resize', () => {
-  W = innerWidth; H = innerHeight;
-  renderer.setSize(W, H);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  camera.aspect = W / H;
-  camera.updateProjectionMatrix();
-});
-
-// ════════════════════════════════════════════════════════
-//  CURSOR
-// ════════════════════════════════════════════════════════
-let crX = W/2, crY = H/2;
-
-(function ringLoop(){
-  requestAnimationFrame(ringLoop);
-  crX += (cdX - crX) * .12;
-  crY += (cdY - crY) * .12;
-  cRing.style.left = crX + 'px';
-  cRing.style.top  = crY + 'px';
-})();
-
-document.querySelectorAll('a, button, .fm-card, .gu-item, .rn, #eye-seal, .hero-tag').forEach(el => {
-  el.addEventListener('mouseenter', () => cDot.classList.add('grow'));
-  el.addEventListener('mouseleave', () => cDot.classList.remove('grow'));
-});
-
-// Cicada hover detection via raycasting
-if (window._cicada) {
-  const ray = new THREE.Raycaster();
-  const ptr = new THREE.Vector2();
-  window.addEventListener('mousemove', () => {
-    ptr.x =  (cdX / W) * 2 - 1;
-    ptr.y = -(cdY / H) * 2 + 1;
-    ray.setFromCamera(ptr, camera);
-    cDot.classList.toggle('gold', ray.intersectObject(window._cicada).length > 0);
-  });
-}
-
-// ════════════════════════════════════════════════════════
-//  WIPE REVEAL
-// ════════════════════════════════════════════════════════
-(function(){
-  if (!window.IntersectionObserver) {
-    document.querySelectorAll('.wipe').forEach(el => el.classList.add('vis'));
-    return;
-  }
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis'); });
-  }, { threshold: 0, rootMargin: '0px 0px 120px 0px' });
-  document.querySelectorAll('.wipe').forEach(el => obs.observe(el));
-})();
-
-// ════════════════════════════════════════════════════════
-//  FORMATION CANVAS (about section)
-// ════════════════════════════════════════════════════════
-(function(){
-  const fc = document.getElementById('fc');
-  if (!fc) return;
-  const fx = fc.getContext('2d');
-  const FW = 260, FH = 260, FCX = 130, FCY = 130;
-  let fT = 0;
-  const HEX_R = 108, INNER_R = 52;
-  const hexV = [], innerV = [];
-  for (let i = 0; i < 6; i++) {
-    const a = i * Math.PI / 3 - Math.PI/2;
-    hexV.push([FCX + Math.cos(a)*HEX_R, FCY + Math.sin(a)*HEX_R]);
-  }
-  function drawFormation() {
-    requestAnimationFrame(drawFormation);
-    fT += .006;
-    fx.clearRect(0, 0, FW, FH);
-
-    // Outer hex
-    fx.beginPath();
-    fx.moveTo(hexV[0][0], hexV[0][1]);
-    hexV.slice(1).forEach(([x,y]) => fx.lineTo(x,y));
-    fx.closePath();
-    fx.strokeStyle = 'rgba(21,200,94,.18)'; fx.lineWidth = 1; fx.stroke();
-
-    // Spokes
-    hexV.forEach(([x,y]) => {
-      fx.beginPath(); fx.moveTo(x, y); fx.lineTo(FCX, FCY);
-      fx.strokeStyle = 'rgba(21,200,94,.09)'; fx.lineWidth = .65; fx.stroke();
-    });
-
-    // Rotating inner hex
-    fx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const a = fT * .35 + i * Math.PI / 3;
-      const [rx, ry] = [FCX + Math.cos(a)*INNER_R, FCY + Math.sin(a)*INNER_R];
-      i === 0 ? fx.moveTo(rx, ry) : fx.lineTo(rx, ry);
-    }
-    fx.closePath();
-    fx.strokeStyle = 'rgba(21,200,94,.16)'; fx.lineWidth = .75; fx.stroke();
-
-    // Energy pulses along outer hex
-    for (let i = 0; i < 6; i++) {
-      const prog = ((fT * .7 + i * (1/6)) % 1);
-      const nxt  = (i + 1) % 6;
-      const px   = hexV[i][0] + (hexV[nxt][0] - hexV[i][0]) * prog;
-      const py   = hexV[i][1] + (hexV[nxt][1] - hexV[i][1]) * prog;
-      const eg = fx.createRadialGradient(px, py, 0, px, py, 9);
-      eg.addColorStop(0, 'rgba(21,200,94,.85)');
-      eg.addColorStop(1, 'rgba(21,200,94,0)');
-      fx.fillStyle = eg;
-      fx.beginPath(); fx.arc(px, py, 9, 0, Math.PI*2); fx.fill();
-    }
-
-    // Vertex nodes
-    hexV.forEach(([x,y], i) => {
-      const bright = .35 + .3 * Math.sin(fT * 1.4 + i);
-      fx.beginPath(); fx.arc(x, y, 3.5, 0, Math.PI*2);
-      fx.fillStyle = `rgba(21,200,94,${bright})`; fx.fill();
-    });
-
-    // 22 pathway dots (outer ring - 22 pathways in the Gu world)
-    for (let i = 0; i < 22; i++) {
-      const a   = fT * .05 + i * Math.PI * 2 / 22;
-      const dot = .1 + .3 * Math.pow(Math.sin(fT * 2.4 + i * .8) * .5 + .5, 2);
-      fx.beginPath(); fx.arc(FCX + Math.cos(a)*122, FCY + Math.sin(a)*122, 1.8, 0, Math.PI*2);
-      fx.fillStyle = `rgba(21,200,94,${dot})`; fx.fill();
-    }
-
-    // Center core glow
-    const cg = fx.createRadialGradient(FCX, FCY, 0, FCX, FCY, 18);
-    cg.addColorStop(0, `rgba(21,200,94,${.6 + Math.sin(fT*3)*.18})`);
-    cg.addColorStop(.45,'rgba(21,200,94,.18)');
-    cg.addColorStop(1, 'rgba(21,200,94,0)');
-    fx.fillStyle = cg; fx.beginPath(); fx.arc(FCX, FCY, 18, 0, Math.PI*2); fx.fill();
-    fx.beginPath(); fx.arc(FCX, FCY, 5, 0, Math.PI*2);
-    fx.fillStyle = `rgba(21,200,94,${.8 + Math.sin(fT*3)*.15})`; fx.fill();
-  }
-  drawFormation();
-})();
-
-// ════════════════════════════════════════════════════════
-//  EASTER EGGS
-// ════════════════════════════════════════════════════════
-const eeEl  = document.getElementById('ee');
-const eeTxt = document.getElementById('ee-text');
-const eeHdr = document.getElementById('ee-label');
-
-function openSeal(header, text) {
-  eeHdr.textContent = header;
-  eeTxt.textContent = '';
-  eeEl.classList.add('open');
-  let i = 0;
-  const iv = setInterval(() => {
-    eeTxt.textContent += text[i++];
-    if (i >= text.length) clearInterval(iv);
-  }, 20);
-}
-function closeSeal() { eeEl.classList.remove('open'); }
-
-document.getElementById('ee-dismiss').addEventListener('click', closeSeal);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSeal(); });
-
-// Seal 1 — Click the cicada (raycasting click)
-(function(){
-  const r = new THREE.Raycaster();
-  const p = new THREE.Vector2();
-  window.addEventListener('click', e => {
-    if (!window._cicada || eeEl.classList.contains('open')) return;
-    p.x =  (e.clientX / W) * 2 - 1;
-    p.y = -(e.clientY / H) * 2 + 1;
-    r.setFromCamera(p, camera);
-    if (r.intersectObject(window._cicada).length > 0) {
-      openSeal(
-        '◉  FIRST SEAL  ·  SPRING AUTUMN CICADA  ◉',
-        '"I am a demon. I pursue my own interests. In this world, only I am eternally reliable."'
-      );
-    }
-  });
-})();
-
-// Seal 2 — Hover hero-tag for 2.8 seconds
-(function(){
-  const el = document.querySelector('.hero-tag');
-  if (!el) return;
-  let timer;
-  el.addEventListener('mouseenter', () => {
-    timer = setTimeout(() => openSeal(
-      '◉  SECOND SEAL  ·  THE FIVE HUNDRED YEAR PLAN  ◉',
-      '"Life is a journey full of calamity. Only by standing at the peak of the world can you protect yourself and not be swallowed by this brutal world."'
-    ), 2800);
-  });
-  el.addEventListener('mouseleave', () => clearTimeout(timer));
-})();
-
-// Seal 3 — Eye seal triple-click
-(function(){
-  let n = 0, timer;
-  document.getElementById('eye-seal')?.addEventListener('click', () => {
-    n++; clearTimeout(timer);
-    if (n >= 3) {
-      openSeal(
-        '◉  THIRD SEAL  ·  THE GUARDIAN\'S BURDEN  ◉',
-        '"Although being capable of knowing a little about fate, one remains helpless towards fate; therefore, one might as well use a smiling face to hide all the pain, sorrow, confusion, and depression."'
-      );
-      n = 0;
-    } else {
-      timer = setTimeout(() => n = 0, 1600);
-    }
-  });
-})();
-
-// Seal 4 — Konami
-(function(){
-  const seq = [38,38,40,40,37,39,37,39,66,65];
-  let p = 0;
-  document.addEventListener('keydown', e => {
-    if (e.keyCode === seq[p]) {
-      if (++p === seq.length) {
-        openSeal(
-          '◉  HIDDEN SEAL  ·  HEAVEN AND EARTH  ◉',
-          '"Heaven and earth have no love. Gu Masters have no mercy. This Venerable only has himself in his heart."'
-        );
-        p = 0;
-      }
-    } else p = 0;
-  });
+  if(sc.scrollLeft!==lx||dirty){lx=sc.scrollLeft;dirty=0;draw()}
+  birds();
 })();
 </script>
 </body>
